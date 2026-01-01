@@ -140,9 +140,9 @@ Create a basic UI to interact with your bridge:
 Your submission should include:
 
 1. **Smart Contracts**
-   - [ ] `TokenBridge.sol` - Bridge logic contract
-   - [ ] Deployment scripts
-   - [ ] Bridge token script
+   - [x] `TokenBridge.sol` - Bridge logic contract
+   - [x] Deployment scripts
+   - [x] Bridge token script
 
 2. **Documentation**
    - [ ] README explaining your implementation
