@@ -2,8 +2,9 @@
 pragma solidity >=0.8.29 <0.9.0;
 
 import { Script } from "@forge/Script.sol";
+import {Config} from "@forge/Config.sol";
 
-abstract contract BaseScript is Script {
+abstract contract BaseScript is Script, Config {
     /// @dev Included to enable compilation of the script without a $MNEMONIC environment variable.
     string internal constant TEST_MNEMONIC = "test test test test test test test test test test test junk";
 

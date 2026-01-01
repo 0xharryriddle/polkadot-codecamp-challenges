@@ -1,0 +1,17 @@
+[sepolia]
+endpoint_url= ""
+
+[sepolia.address]
+token_gateway= "0x"
+
+[bsc-testnet]
+endpoint_url= ""
+
+[bsc-testnet.address]
+token_gateway= "0x"
+
+[optimism-sepolia]
+endpoint_url= ""
+
+[optimism-sepolia.address]
+token_gateway= "0x"
