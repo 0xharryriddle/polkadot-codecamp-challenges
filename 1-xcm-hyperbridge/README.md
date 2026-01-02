@@ -145,14 +145,14 @@ Your submission should include:
    - [x] Bridge token script
 
 2. **Documentation**
-   - [ ] README explaining your implementation
+   - [x] README explaining your implementation
    - [ ] Deployment addresses
 
 3. **Testing**
-   - [ ] Unit tests for `TokenBridge.sol` contract
+   - [x] Unit tests for `TokenBridge.sol` contract
 
 4. **Frontend**
-   - [ ] Basic UI for bridging tokens
+   - [x] Basic UI for bridging tokens
    - [ ] Screenshots of your UI in action
    - [ ] Accessible Recording Link 
    - [ ] Minimum supported network pairs (pick at least one)
