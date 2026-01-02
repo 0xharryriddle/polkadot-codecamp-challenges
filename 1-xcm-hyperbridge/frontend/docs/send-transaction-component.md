@@ -76,7 +76,7 @@ async function onSubmit(values: z.infer<typeof formSchema>) {
       account: await getSigpassWallet(),
       to: values.address as Address,
       value: parseEther(values.amount),
-      chainId: westendAssetHub.id,
+      chainId: paseoTestnet.id,
     });
   } else {
     // if no address is provided, use the connected wallet (browser extension or via WalletConnect)

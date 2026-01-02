@@ -3,6 +3,7 @@ import { Unbounded } from "next/font/google";
 import "./globals.css";
 import '@rainbow-me/rainbowkit/styles.css';
 import { Providers } from '@/app/providers';
+import Navbar from "@/components/navbar";
 
 const unbounded = Unbounded({
   subsets: ['latin'],
@@ -26,6 +27,7 @@ export default function RootLayout({
         className={unbounded.className}
       >
         <Providers>
+          <Navbar/>
           <main>
             {children}
           </main>

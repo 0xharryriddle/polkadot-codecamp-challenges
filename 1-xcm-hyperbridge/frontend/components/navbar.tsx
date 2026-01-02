@@ -15,18 +15,6 @@ export default function Navbar() {
       >
         Send transaction
       </Link>
-      <Link
-        className="text-sm underline underline-offset-4"
-        href="/write-contract"
-      >
-        Write contract
-      </Link>
-      <Link
-        className="text-sm underline underline-offset-4"
-        href="/mint-redeem-lst-bifrost"
-      >
-        Mint/Redeem LST Bifrost
-      </Link>
     </div>
   );
 }

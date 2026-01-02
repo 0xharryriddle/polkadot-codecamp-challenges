@@ -90,7 +90,7 @@ async function onSubmit(values: z.infer<typeof formSchema>) {
       abi: erc20Abi,
       functionName: 'transfer',
       args: [values.address as Address, parseUnits(values.amount, decimals as number)],
-      chainId: westendAssetHub.id,
+      chainId: paseoTestnet.id,
     });
   } else {
     // Fallback to connected wallet
@@ -99,7 +99,7 @@ async function onSubmit(values: z.infer<typeof formSchema>) {
       abi: erc20Abi,
       functionName: 'transfer',
       args: [values.address as Address, parseUnits(values.amount, decimals as number)],
-      chainId: westendAssetHub.id,
+      chainId: paseoTestnet.id,
     });
   }
 }

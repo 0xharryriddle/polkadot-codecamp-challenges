@@ -12,53 +12,71 @@ import {
   ledgerWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 import {
-  manta,
-  moonbaseAlpha,
-  moonbeam
+  sepolia,
+  bscTestnet,
+  optimismSepolia,
 } from 'wagmi/chains';
-import { defineChain } from 'viem';
+import { defineChain, type Chain } from 'viem';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, http, createConfig } from 'wagmi';
 import { Provider as JotaiProvider } from 'jotai';
-// import according to docs
+import { PolkadotChainProvider } from '@/context/PolkadotChainContext';
+import { paraChain, paseoAssetHubChainApi } from '@/api';
 
-export const westendAssetHub = defineChain({
-  id: 420420421,
-  name: "Westend AssetHub",
+// Paseo Testnet chain definition (Polkadot testnet)
+export const paseoTestnet = defineChain({
+  id: 420420420,
+  name: "Paseo Testnet",
   nativeCurrency: {
     decimals: 18,
-    name: 'Westend',
-    symbol: 'WND',
+    name: 'Paseo',
+    symbol: 'PAS',
   },
   rpcUrls: {
     default: {
-      http: ['https://westend-asset-hub-eth-rpc.polkadot.io'],
-      webSocket: ['wss://westend-asset-hub-eth-rpc.polkadot.io'],
+      http: ['https://testnet-passet-hub-eth-rpc.polkadot.io'],
+      webSocket: ['wss://passet-hub-paseo.ibp.network'],
     },
   },
   blockExplorers: {
-    default: { name: 'Explorer', url: 'https://assethub-westend.subscan.io' },
+    default: { name: 'Blockscout', url: 'https://blockscout-passet-hub.parity-testnet.parity.io/' },
   },
-  contracts: {
-    multicall3: {
-      address: '0x5545dec97cb957e83d3e6a1e82fabfacf9764cf1',
-      blockCreated: 10174702,
-    },
-  },
+  testnet: true,
 })
+
+// Bridge supported chains configuration
+export const bridgeChains = {
+  sepolia,
+  bscTestnet,
+  optimismSepolia,
+  paseoTestnet,
+} as const;
+
+// Network pairs for bridge (source -> destination)
+export type BridgeNetworkPair = {
+  source: Chain;
+  destination: Chain;
+  name: string;
+};
+
+export const bridgeNetworkPairs: BridgeNetworkPair[] = [
+  { source: paseoTestnet, destination: sepolia, name: "Paseo → ETH Sepolia" },
+  { source: bscTestnet, destination: sepolia, name: "BSC Testnet → ETH Sepolia" },
+  { source: optimismSepolia, destination: sepolia, name: "Optimism Sepolia → ETH Sepolia" },
+];
 
 export const localConfig = createConfig({
   chains: [
-    westendAssetHub,
-    manta,
-    moonbaseAlpha,
-    moonbeam,
+    sepolia,
+    bscTestnet,
+    optimismSepolia,
+    paseoTestnet,
   ],
   transports: {
-    [westendAssetHub.id]: http(),
-    [manta.id]: http(),
-    [moonbaseAlpha.id]: http(),
-    [moonbeam.id]: http(),
+    [sepolia.id]: http(),
+    [bscTestnet.id]: http(),
+    [optimismSepolia.id]: http(),
+    [paseoTestnet.id]: http(),
   },
   ssr: true,
 });
@@ -77,16 +95,16 @@ const config = getDefaultConfig({
     },
   ],
   chains: [
-    westendAssetHub,
-    moonbeam,
-    moonbaseAlpha,
-    manta
+    sepolia,
+    bscTestnet,
+    optimismSepolia,
+    paseoTestnet,
   ],
   transports: {
-    [westendAssetHub.id]: http(),
-    [moonbeam.id]: http(),
-    [moonbaseAlpha.id]: http(),
-    [manta.id]: http(),
+    [sepolia.id]: http(),
+    [bscTestnet.id]: http(),
+    [optimismSepolia.id]: http(),
+    [paseoTestnet.id]: http(),
   },
   ssr: true, // Because it is Nextjs's App router, you need to declare ssr as true
 });
@@ -97,11 +115,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <JotaiProvider>
       <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
+        <PolkadotChainProvider value={{ client: paraChain, api: paseoAssetHubChainApi}}>
+          <QueryClientProvider client={queryClient}>
           <RainbowKitProvider>
             {children}
           </RainbowKitProvider>
         </QueryClientProvider>
+        </PolkadotChainProvider>
       </WagmiProvider>
     </JotaiProvider>
   );

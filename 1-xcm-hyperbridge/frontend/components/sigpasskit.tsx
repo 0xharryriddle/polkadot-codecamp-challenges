@@ -32,7 +32,7 @@ import {
 import Image from 'next/image';
 import { useAtom } from 'jotai';
 import { atomWithStorage, RESET } from 'jotai/utils';
-import { westendAssetHub } from '@/app/providers';
+import { paseoTestnet } from '@/app/providers';
 
 
 // Set the string key and the initial value
@@ -40,9 +40,9 @@ export const addressAtom = atomWithStorage<Address | undefined>('SIGPASS_ADDRESS
 
 // create a local config for the wallet
 const localConfig = createConfig({
-  chains: [westendAssetHub],
+  chains: [paseoTestnet],
   transports: {
-    [westendAssetHub.id]: http(),
+    [paseoTestnet.id]: http(),
   },
   ssr: true,
 });
@@ -58,7 +58,7 @@ export default function SigpassKit() {
   const config = useConfig();
   const { data: balance } = useBalance({
     address: address,
-    chainId: westendAssetHub.id,
+    chainId: paseoTestnet.id,
     config: address ? localConfig : config,
   });
 
@@ -216,7 +216,7 @@ export default function SigpassKit() {
                 {truncateAddress(address, 4)}
               </DialogDescription>
               <div className="flex flex-col items-center text-sm text-muted-foreground">
-                {balance ? `${formatEther(balance.value)} WND` : <Skeleton className="w-[80px] h-[24px] rounded-md" />}
+                {balance ? `${formatEther(balance.value)} PAS` : <Skeleton className="w-[80px] h-[24px] rounded-md" />}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Button onClick={copyAddress} className="rounded-xl font-bold text-md hover:scale-105 transition-transform">
@@ -349,7 +349,7 @@ export default function SigpassKit() {
             </DrawerHeader>
             <div className="flex flex-col items-center gap-2">
               <div className="flex flex-col items-center text-sm text-muted-foreground mb-4">
-                {balance ? `${formatEther(balance.value)} WND` : <Skeleton className="w-[80px] h-[24px] rounded-md" />}
+                {balance ? `${formatEther(balance.value)} PAS` : <Skeleton className="w-[80px] h-[24px] rounded-md" />}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Button onClick={copyAddress} className="rounded-xl font-bold text-md hover:scale-105 transition-transform">

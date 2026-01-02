@@ -55,10 +55,9 @@ import {
 import { truncateHash } from "@/lib/utils";
 import CopyButton from "@/components/copy-button";
 import { getSigpassWallet } from "@/lib/sigpass";
-import { westendAssetHub } from "@/app/providers";
 import { useAtomValue } from 'jotai';
 import { addressAtom } from '@/components/sigpasskit';
-import { localConfig } from '@/app/providers';
+import { localConfig, paseoTestnet } from '@/app/providers';
 
 // form schema for sending transaction
 const formSchema = z.object({
@@ -124,7 +123,7 @@ export default function SendTransaction() {
         account: await getSigpassWallet(),
         to: values.address as Address,
         value: parseEther(values.amount),
-        chainId: westendAssetHub.id,
+        chainId: paseoTestnet.id,
       });
     } else {
       // Fallback to connected wallet
@@ -164,7 +163,7 @@ export default function SendTransaction() {
                 <FormControl>
                   <Input placeholder="0xA0Cf…251e" {...field} />
                 </FormControl>
-                <FormDescription>The address to send WND to.</FormDescription>
+                <FormDescription>The address to send PAS to.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -194,7 +193,7 @@ export default function SendTransaction() {
                     />
                   )}
                 </FormControl>
-                <FormDescription>The amount of WND to send.</FormDescription>
+                <FormDescription>The amount of PAS to send.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
