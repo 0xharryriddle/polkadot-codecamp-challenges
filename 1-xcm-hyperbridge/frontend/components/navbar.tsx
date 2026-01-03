@@ -15,6 +15,12 @@ export default function Navbar() {
       >
         Send transaction
       </Link>
+      <Link
+        className="text-sm underline underline-offset-4"
+        href="/faucet"
+      >
+        Faucet test tokens
+      </Link>
     </div>
   );
 }

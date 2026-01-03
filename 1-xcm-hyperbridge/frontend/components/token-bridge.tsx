@@ -116,6 +116,7 @@ export default function TokenBridge() {
   const [open, setOpen] = useState(false);
   const [selectedPairIndex, setSelectedPairIndex] = useState<number>(0);
   const [tokenAddress, setTokenAddress] = useState<Address | "">("");
+  const [needsApproval, setNeedsApproval] = useState(true);
 
   // get the address from session storage (sigpass wallet)
   const sigpassAddress = useAtomValue(addressAtom);
@@ -274,6 +275,37 @@ export default function TokenBridge() {
     }
   }, [isBridgeConfirmed, refetchTokenData]);
 
+  // Calculate if approval is needed based on current form amount
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      if (!value.amount || !tokenDecimals || !tokenAllowance) {
+        setNeedsApproval(true);
+        return;
+      }
+
+      try {
+        const amount = parseUnits(value.amount, tokenDecimals);
+        setNeedsApproval(tokenAllowance < amount);
+      } catch {
+        setNeedsApproval(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, tokenDecimals, tokenAllowance]);
+
+  // Auto-trigger bridge after approval is confirmed
+  useEffect(() => {
+    if (isApproveConfirmed && !bridgeHash && !isBridgePending) {
+      // Refetch to get updated allowance
+      refetchTokenData().then(() => {
+        // Small delay to ensure state updates
+        setTimeout(() => {
+          executeBridge();
+        }, 500);
+      });
+    }
+  }, [isApproveConfirmed]);
+
   // Check if on correct chain
   const isOnCorrectChain = account.chainId === selectedPair.source.id;
 
@@ -286,7 +318,7 @@ export default function TokenBridge() {
     }
   }
 
-  // Submit handler
+  // Submit handler - handles both approval and bridging
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!activeAddress || !tokenDecimals || !bridgeContract) return;
 
@@ -294,9 +326,9 @@ export default function TokenBridge() {
 
     try {
       // Check if approval is needed
-      const needsApproval = !tokenAllowance || tokenAllowance < amount;
+      const requiresApproval = !tokenAllowance || tokenAllowance < amount;
 
-      if (needsApproval && bridgeContract) {
+      if (requiresApproval) {
         // First approve the bridge contract
         if (sigpassAddress) {
           await writeApproveAsync({
@@ -316,9 +348,13 @@ export default function TokenBridge() {
             chainId: selectedPair.source.id as SupportedChainId,
           });
         }
+        // Bridge will be triggered automatically after approval via useEffect
+      } else {
+        // Already approved, proceed directly to bridge
+        await executeBridge();
       }
     } catch (error) {
-      console.error("Approval failed:", error);
+      console.error("Transaction failed:", error);
     }
   }
 
@@ -661,15 +697,15 @@ export default function TokenBridge() {
                 )}
               />
 
-              {isApprovePending || isBridgePending ? (
+              {isApprovePending || isBridgePending || isApproveConfirming ? (
                 <Button type="submit" disabled className="w-full">
                   <LoaderCircle className="w-4 h-4 animate-spin mr-2" /> 
-                  {isApprovePending ? "Approving..." : "Bridging..."}
+                  {isApprovePending || isApproveConfirming ? "Approving..." : "Bridging..."}
                 </Button>
               ) : (
                 <Button type="submit" className="w-full">
                   <ArrowRight className="w-4 h-4 mr-2" />
-                  Bridge Tokens
+                  {needsApproval ? "Approve Tokens" : "Bridge Tokens"}
                 </Button>
               )}
             </form>

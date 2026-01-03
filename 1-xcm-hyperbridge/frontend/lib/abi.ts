@@ -2481,6 +2481,13 @@ export const bridgeableTokenAbi = [
   },
   {
     "type": "function",
+    "name": "faucet",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "gateway",
     "inputs": [],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],

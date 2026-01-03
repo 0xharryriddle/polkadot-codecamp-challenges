@@ -19,4 +19,8 @@ contract BridgeableToken is HyperFungibleToken {
     function gateway() public view override returns (address) {
         return _gateway;
     }
+
+    function faucet() external {
+        _mint(msg.sender, 1_000 * 10**decimals());
+    }
 }

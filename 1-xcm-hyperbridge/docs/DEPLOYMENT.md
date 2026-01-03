@@ -47,10 +47,10 @@ Deploy the contracts on each chain where you want to enable bridging.
 ### Deploy on Sepolia
 
 ```bash
-forge script script/Deployment.s.sol:DeploymentScript \
-  --rpc-url sepolia \
+ETH_FROM=0x5984A519fFfE5aFc5e8bBA233DCc01AC774f4301 forge script script/Deployment.s.sol:DeploymentScript \
+  --rpc-url https://1rpc.io/sepolia \
   --account defaultKey \
-  --sender <YOUR_ADDRESS> \
+  --sender 0x5984A519fFfE5aFc5e8bBA233DCc01AC774f4301 \
   --broadcast \
   -vvvvv
 ```
@@ -69,10 +69,10 @@ forge script script/Deployment.s.sol:DeploymentScript \
 ### Deploy on Optimism Sepolia
 
 ```bash
-forge script script/Deployment.s.sol:DeploymentScript \
-  --rpc-url optimism-sepolia \
+ETH_FROM=0x5984A519fFfE5aFc5e8bBA233DCc01AC774f4301 forge script script/Deployment.s.sol:DeploymentScript \
+  --rpc-url https://sepolia.optimism.io \
   --account defaultKey \
-  --sender <YOUR_ADDRESS> \
+  --sender 0x5984A519fFfE5aFc5e8bBA233DCc01AC774f4301 \
   --broadcast \
   -vvvvv
 ```

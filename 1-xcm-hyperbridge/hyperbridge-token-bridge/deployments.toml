@@ -1,17 +1,17 @@
 [sepolia]
-endpoint_url= ""
+endpoint_url = "https://1rpc.io/sepolia"
 
 [sepolia.address]
-token_gateway= "0x"
+token_gateway = "0xFcDa26cA021d5535C3059547390E6cCd8De7acA6"
 
 [bsc-testnet]
-endpoint_url= ""
+endpoint_url = "https://bsc-testnet-rpc.publicnode.com"
 
 [bsc-testnet.address]
-token_gateway= "0x"
+token_gateway = "0xFcDa26cA021d5535C3059547390E6cCd8De7acA6"
 
 [optimism-sepolia]
-endpoint_url= ""
+endpoint_url = "https://endpoints.omniatech.io/v1/op/sepolia/public"
 
 [optimism-sepolia.address]
-token_gateway= "0x"
+token_gateway = "0xFcDa26cA021d5535C3059547390E6cCd8De7acA6"

@@ -23,10 +23,10 @@ export const chainIdentifiers: Record<number, string> = {
 export const bridgeConfigs: Record<number, BridgeConfig> = {
     // Ethereum Sepolia
     11155111: {
-        tokenBridge: "0x0000000000000000000000000000000000000000",
-        tokenGateway: "0x0000000000000000000000000000000000000000",
-        feeToken: "0x0000000000000000000000000000000000000000",
-        defaultBridgeToken: "0x0000000000000000000000000000000000000000",
+        tokenBridge: "0x5169Fc3372a06375c6B1C4E47d00AeEd42b1b80F",
+        tokenGateway: "0xFcDa26cA021d5535C3059547390E6cCd8De7acA6",
+        feeToken: "0xAa1452b759708bc5b50264bdB78d7b9F22eD366F",
+        defaultBridgeToken: "0xa44741349E5Fc8121b5Cd415661274937bC07281",
     },
     // BSC Testnet
     97: {
@@ -37,10 +37,10 @@ export const bridgeConfigs: Record<number, BridgeConfig> = {
     },
     // Optimism Sepolia
     11155420: {
-        tokenBridge: "0x0000000000000000000000000000000000000000",
-        tokenGateway: "0x0000000000000000000000000000000000000000",
-        feeToken: "0x0000000000000000000000000000000000000000",
-        defaultBridgeToken: "0x0000000000000000000000000000000000000000",
+        tokenBridge: "0xf64d93DC125AC1B366532BBbA165615f6D566C7F",
+        tokenGateway: "0xFcDa26cA021d5535C3059547390E6cCd8De7acA6",
+        feeToken: "0xb511e70ea8c6840e8E9b9f2b93bf1c3Ac483C98f",
+        defaultBridgeToken: "0x2402C804aD8a6217BF73D8483dA7564065c56083",
     },
     // Paseo Testnet
     420420420: {

@@ -31,7 +31,7 @@ async function createOrThrow(name: string, data: Uint8Array) {
           name: location.hostname,
         },
         user: {
-          id: data,
+          id: data as BufferSource,
           name: name,
           displayName: name,
         },
@@ -67,7 +67,7 @@ async function getOrThrow(id: Uint8Array) {
     const credential = await navigator.credentials.get({
       publicKey: {
         challenge: new Uint8Array([117, 61, 252, 231, 191, 241]),
-        allowCredentials: [{ type: "public-key", id }],
+        allowCredentials: [{ type: "public-key", id: id as BufferSource }],
       },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

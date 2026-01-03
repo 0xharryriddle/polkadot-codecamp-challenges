@@ -8,7 +8,7 @@ import {TokenBridge} from "../src/TokenBridge.sol";
 
 contract BridgeTokenScript is BaseScript {
     function run() external broadcast {
-        _loadConfig("../bridge.toml", false);
+        _loadConfig("bridge.toml", false);
 
         // Get deployed contract addresses
         address tokenBridgeAddress = config.get("token_bridge").toAddress();

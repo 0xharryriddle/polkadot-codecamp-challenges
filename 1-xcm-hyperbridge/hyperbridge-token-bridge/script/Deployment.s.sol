@@ -9,11 +9,8 @@ import {MockToken} from "../src/MockToken.sol";
 
 contract DeploymentScript is BaseScript {
     function run() external broadcast returns (BridgeableToken testToken, MockToken feeToken, TokenBridge bridge) {
-        // Load config and enable write-back for storing deployment addresses
-        _loadConfig("../deployments.toml", true);
-
         // Get the deployed TokenGateway address
-        address tokenGatewayAddress = config.get("token_gateway").toAddress();
+        address tokenGatewayAddress = 0xFcDa26cA021d5535C3059547390E6cCd8De7acA6;
 
         // Get the chainId of the current chain
         uint256 chainId = block.chainid;
@@ -28,21 +25,5 @@ contract DeploymentScript is BaseScript {
         
         // Deploy the TokenBridge contract
         bridge = new TokenBridge(tokenGatewayAddress, address(feeToken));
-
-        // Write deployment addresses to config
-        writeDeploymentAddresses(testToken, feeToken, bridge);
-    }
-
-    function writeDeploymentAddresses(
-        BridgeableToken testToken,
-        MockToken feeToken,
-        TokenBridge bridge
-    ) internal {
-        // Write deployment addresses back to the config file
-        config.set("bridgeable_token", address(testToken));
-        config.set("fee_token", address(feeToken));
-        config.set("token_bridge", address(bridge));
-
-        console.log("\nDeployment complete! Addresses saved to deployments.toml");
     }
 }
