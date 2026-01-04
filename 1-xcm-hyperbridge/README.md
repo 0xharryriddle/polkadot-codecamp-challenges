@@ -146,7 +146,7 @@ Your submission should include:
 
 2. **Documentation**
    - [x] README explaining your implementation
-   - [ ] Deployment addresses
+   - [x] Deployment addresses
 
 3. **Testing**
    - [x] Unit tests for `TokenBridge.sol` contract

@@ -8,6 +8,7 @@ export interface BridgeConfig {
     tokenGateway: Address;
     feeToken: Address;
     defaultBridgeToken: Address;
+    tokenFaucet?: Address; // Optional, only for testnets
 }
 
 // Chain identifiers for Hyperbridge (StateMachine format)
@@ -37,10 +38,11 @@ export const bridgeConfigs: Record<number, BridgeConfig> = {
     },
     // Optimism Sepolia
     11155420: {
-        tokenBridge: "0xf64d93DC125AC1B366532BBbA165615f6D566C7F",
+        tokenBridge: "0xaa96f24d76886ec69554750de7699d7c4a505ab3",
         tokenGateway: "0xFcDa26cA021d5535C3059547390E6cCd8De7acA6",
-        feeToken: "0xb511e70ea8c6840e8E9b9f2b93bf1c3Ac483C98f",
-        defaultBridgeToken: "0x2402C804aD8a6217BF73D8483dA7564065c56083",
+        feeToken: "0xA801da100bF16D07F668F4A49E1f71fc54D05177", // USDH
+        defaultBridgeToken: "0x4200000000000000000000000000000000000006", // WETH
+        tokenFaucet: "0x1794aB22388303ce9Cb798bE966eeEBeFe59C3a3",
     },
     // Paseo Testnet
     420420420: {

@@ -15,4 +15,8 @@ remappings = [
 
 fs_permissions = [{ access = "read-write", path = "deployments.toml"}]
 
+[rpc_endpoints]
+sepolia = "https://1rpc.io/sepolia"
+optimism-sepolia = "https://sepolia.optimism.io"
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

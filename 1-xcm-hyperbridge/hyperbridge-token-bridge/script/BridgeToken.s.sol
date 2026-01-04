@@ -6,6 +6,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {BaseScript} from "./Base.s.sol";
 import {TokenBridge} from "../src/TokenBridge.sol";
 
+interface IERC20Metadata {
+    function symbol() external view returns (string memory);
+}
+
 contract BridgeTokenScript is BaseScript {
     function run() external broadcast {
         _loadConfig("bridge.toml", false);
@@ -25,6 +29,9 @@ contract BridgeTokenScript is BaseScript {
         TokenBridge bridge = TokenBridge(tokenBridgeAddress);
         IERC20 token = IERC20(bridgeableTokenAddress);
         IERC20 feeToken = IERC20(feeTokenAddress);
+
+        // Get token symbol
+        string memory tokenSymbol = IERC20Metadata(bridgeableTokenAddress).symbol();
 
         // Check balances
         uint256 tokenBalance = token.balanceOf(broadcaster);
@@ -57,6 +64,7 @@ contract BridgeTokenScript is BaseScript {
         // Bridge the tokens
         bridge.bridgeTokens{value: nativeCost}(
             bridgeableTokenAddress,
+            tokenSymbol,
             amount,
             recipient,
             destChain

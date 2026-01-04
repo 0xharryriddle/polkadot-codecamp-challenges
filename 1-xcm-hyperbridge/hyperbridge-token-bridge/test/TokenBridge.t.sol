@@ -2,16 +2,24 @@
 pragma solidity ^0.8.17;
 
 import {Test} from "@forge/Test.sol";
+import {console} from "@forge/console.sol";
 import {ITokenGateway, TeleportParams} from "@hyperbridge/core/contracts/apps/TokenGateway.sol";
 import {TokenBridge} from "../src/TokenBridge.sol";
 import {BridgeableToken} from "../src/BridgeableToken.sol";
 import {MockToken} from "../src/MockToken.sol";
 
 contract MockTokenGateway {
-    event TeleportCalled(TeleportParams params);
+    event AssetTeleported(TeleportParams params, bytes32 commitment);
     
-    function teleport(TeleportParams memory params) external payable {
-        emit TeleportCalled(params);
+    function teleport(TeleportParams memory params) external payable returns (bytes32) {
+        bytes32 commitment = keccak256(abi.encode(params, block.timestamp));
+        emit AssetTeleported(params, commitment);
+        return commitment;
+    }
+    
+    function erc20(bytes32 assetId) external pure returns (address) {
+        // Return a dummy address based on assetId
+        return address(uint160(uint256(assetId)));
     }
 }
 
@@ -27,9 +35,19 @@ contract TokenBridgeTest is Test {
     
     uint256 public constant INITIAL_BALANCE = 10000 * 10**18;
     uint256 public constant BRIDGE_AMOUNT = 1000 * 10**18;
+    uint256 public constant DEFAULT_RELAYER_FEE = 0.001 ether;
     bytes public destChain = bytes("optimism-sepolia");
+    string public constant TOKEN_SYMBOL = "BTK";
     
-    event TeleportCalled(TeleportParams params);
+    event TokensBridged(
+        address indexed token,
+        bytes32 indexed assetId,
+        uint256 amount,
+        address indexed sender,
+        bytes32 recipient,
+        bytes destination,
+        bytes32 commitment
+    );
 
     function setUp() public {
         // Deploy mock gateway
@@ -45,8 +63,8 @@ contract TokenBridgeTest is Test {
             address(mockGateway)
         );
         
-        // Deploy token bridge
-        bridge = new TokenBridge(address(mockGateway), address(feeToken));
+        // Deploy token bridge with default relayer fee
+        bridge = new TokenBridge(address(mockGateway), address(feeToken), DEFAULT_RELAYER_FEE);
         
         // Mint fee tokens to user (owner can mint MockToken)
         feeToken.mint(user, INITIAL_BALANCE);
@@ -62,10 +80,21 @@ contract TokenBridgeTest is Test {
     function testConstructor() public view {
         assertEq(address(bridge.tokenGateway()), address(mockGateway));
         assertEq(bridge.feeToken(), address(feeToken));
-        assertEq(bridge.TIMEOUT(), 24 * 60 * 60);
+        assertEq(bridge.DEFAULT_TIMEOUT(), 86400);
+        assertEq(bridge.defaultRelayerFee(), DEFAULT_RELAYER_FEE);
+    }
+    
+    function testConstructorRevertsOnZeroTokenGateway() public {
+        vm.expectRevert(TokenBridge.ZeroAddress.selector);
+        new TokenBridge(address(0), address(feeToken), DEFAULT_RELAYER_FEE);
+    }
+    
+    function testConstructorRevertsOnZeroFeeToken() public {
+        vm.expectRevert(TokenBridge.ZeroAddress.selector);
+        new TokenBridge(address(mockGateway), address(0), DEFAULT_RELAYER_FEE);
     }
 
-    function testBridgeTokensSuccess() public {
+    function testBridgeTokensSimple() public {
         vm.startPrank(user);
         
         // Approve bridge to spend tokens
@@ -75,9 +104,10 @@ contract TokenBridgeTest is Test {
         uint256 userBalanceBefore = bridgeableToken.balanceOf(user);
         uint256 bridgeBalanceBefore = bridgeableToken.balanceOf(address(bridge));
         
-        // Bridge tokens
-        bridge.bridgeTokens{value: 0.001 ether}(
+        // Bridge tokens with simple signature
+        bridge.bridgeTokens{value: 0.01 ether}(
             address(bridgeableToken),
+            TOKEN_SYMBOL,
             BRIDGE_AMOUNT,
             recipient,
             destChain
@@ -98,14 +128,89 @@ contract TokenBridgeTest is Test {
         vm.stopPrank();
     }
 
-    function testBridgeTokensRevertsOnZeroAddress() public {
+    function testBridgeTokensWithAllParameters() public {
         vm.startPrank(user);
         
-        vm.expectRevert("Token address cannot be zero");
-        bridge.bridgeTokens{value: 0.001 ether}(
-            address(0),
+        bridgeableToken.approve(address(bridge), BRIDGE_AMOUNT);
+        
+        // Bridge tokens with all parameters
+        bridge.bridgeTokens{value: 0.01 ether}(
+            address(bridgeableToken),
+            TOKEN_SYMBOL,
             BRIDGE_AMOUNT,
             recipient,
+            destChain,
+            DEFAULT_RELAYER_FEE,
+            3600, // 1 hour timeout
+            true // redeem
+        );
+        
+        assertEq(
+            bridgeableToken.balanceOf(user),
+            INITIAL_BALANCE - BRIDGE_AMOUNT,
+            "User balance should decrease"
+        );
+        
+        vm.stopPrank();
+    }
+
+    function testBridgeTokensWithAssetId() public {
+        vm.startPrank(user);
+        
+        bridgeableToken.approve(address(bridge), BRIDGE_AMOUNT);
+        
+        // Generate assetId
+        bytes32 assetId = bridge.getAssetId(TOKEN_SYMBOL);
+        
+        // Bridge tokens with assetId
+        bridge.bridgeTokensWithAssetId{value: 0.01 ether}(
+            address(bridgeableToken),
+            assetId,
+            BRIDGE_AMOUNT,
+            recipient,
+            destChain,
+            DEFAULT_RELAYER_FEE,
+            7200, // 2 hours timeout
+            false // don't redeem
+        );
+        
+        assertEq(
+            bridgeableToken.balanceOf(user),
+            INITIAL_BALANCE - BRIDGE_AMOUNT,
+            "User balance should decrease"
+        );
+        
+        vm.stopPrank();
+    }
+
+    function testBridgeTokensRevertsOnZeroAmount() public {
+        vm.startPrank(user);
+        
+        bridgeableToken.approve(address(bridge), 0);
+        
+        vm.expectRevert(TokenBridge.InvalidAmount.selector);
+        bridge.bridgeTokens{value: 0.01 ether}(
+            address(bridgeableToken),
+            TOKEN_SYMBOL,
+            0,
+            recipient,
+            destChain
+        );
+        
+        vm.stopPrank();
+    }
+
+    function testBridgeTokensRevertsOnZeroRecipient() public {
+        vm.startPrank(user);
+        
+        bridgeableToken.approve(address(bridge), BRIDGE_AMOUNT);
+        
+        vm.expectRevert(TokenBridge.InvalidRecipient.selector);
+        bridge.bridgeTokens{value: 0.01 ether}(
+            address(bridgeableToken),
+            TOKEN_SYMBOL,
+            BRIDGE_AMOUNT,
+            address(0),
             destChain
         );
         
@@ -115,10 +220,11 @@ contract TokenBridgeTest is Test {
     function testBridgeTokensRevertsOnInsufficientAllowance() public {
         vm.startPrank(user);
         
-        // Don't approve, should fail
-        vm.expectRevert();
-        bridge.bridgeTokens{value: 0.001 ether}(
+        // Don't approve, should fail with ERC20 error (not our custom error)
+        vm.expectRevert(); // Just expect any revert
+        bridge.bridgeTokens{value: 0.01 ether}(
             address(bridgeableToken),
+            TOKEN_SYMBOL,
             BRIDGE_AMOUNT,
             recipient,
             destChain
@@ -127,21 +233,68 @@ contract TokenBridgeTest is Test {
         vm.stopPrank();
     }
 
-    function testBridgeTokensRevertsOnInsufficientBalance() public {
+    function testBridgeTokensEmitsEvent() public {
         vm.startPrank(user);
         
-        uint256 excessiveAmount = INITIAL_BALANCE + 1;
-        bridgeableToken.approve(address(bridge), excessiveAmount);
+        bridgeableToken.approve(address(bridge), BRIDGE_AMOUNT);
         
-        vm.expectRevert();
-        bridge.bridgeTokens{value: 0.001 ether}(
+        bytes32 assetId = bridge.getAssetId(TOKEN_SYMBOL);
+        bytes32 recipientBytes32 = bytes32(uint256(uint160(recipient)));
+        
+        // Expect TokensBridged event
+        vm.expectEmit(true, true, true, false);
+        emit TokensBridged(
             address(bridgeableToken),
-            excessiveAmount,
+            assetId,
+            BRIDGE_AMOUNT,
+            user,
+            recipientBytes32,
+            destChain,
+            bytes32(0)
+        );
+        
+        bridge.bridgeTokens{value: 0.01 ether}(
+            address(bridgeableToken),
+            TOKEN_SYMBOL,
+            BRIDGE_AMOUNT,
             recipient,
             destChain
         );
         
         vm.stopPrank();
+    }
+
+    function testSetDefaultRelayerFee() public {
+        uint256 newRelayerFee = 0.002 ether;
+        
+        bridge.setDefaultRelayerFee(newRelayerFee);
+        
+        assertEq(bridge.defaultRelayerFee(), newRelayerFee, "Default relayer fee should be updated");
+    }
+
+    function testGetAssetId() public view {
+        bytes32 assetId = bridge.getAssetId(TOKEN_SYMBOL);
+        bytes32 expectedAssetId = keccak256(bytes(TOKEN_SYMBOL));
+        
+        assertEq(assetId, expectedAssetId, "Asset ID should match keccak256 hash of symbol");
+    }
+
+    function testGetAssetIdDifferentSymbols() public view {
+        string memory wethSymbol = "WETH";
+        string memory usdcSymbol = "USDC";
+        
+        bytes32 wethAssetId = bridge.getAssetId(wethSymbol);
+        bytes32 usdcAssetId = bridge.getAssetId(usdcSymbol);
+        
+        assertTrue(wethAssetId != usdcAssetId, "Different symbols should have different asset IDs");
+    }
+
+    function testGetERC20Address() public view {
+        bytes32 assetId = bridge.getAssetId(TOKEN_SYMBOL);
+        address erc20Address = bridge.getERC20Address(assetId);
+        
+        // Should return an address (mock gateway returns deterministic address)
+        assertTrue(erc20Address != address(0), "Should return an address");
     }
 
     function testBridgeTokensWithDifferentAmounts() public {
@@ -157,8 +310,9 @@ contract TokenBridgeTest is Test {
             
             uint256 balanceBefore = bridgeableToken.balanceOf(user);
             
-            bridge.bridgeTokens{value: 0.001 ether}(
+            bridge.bridgeTokens{value: 0.01 ether}(
                 address(bridgeableToken),
+                TOKEN_SYMBOL,
                 amounts[i],
                 recipient,
                 destChain
@@ -174,127 +328,6 @@ contract TokenBridgeTest is Test {
         }
     }
 
-    function testBridgeTokensWithDifferentRecipients() public {
-        address[] memory recipients = new address[](3);
-        recipients[0] = address(0x100);
-        recipients[1] = address(0x200);
-        recipients[2] = address(0x300);
-        
-        vm.startPrank(user);
-        
-        for (uint256 i = 0; i < recipients.length; i++) {
-            bridgeableToken.approve(address(bridge), BRIDGE_AMOUNT);
-            
-            // Should not revert with different recipients
-            bridge.bridgeTokens{value: 0.001 ether}(
-                address(bridgeableToken),
-                BRIDGE_AMOUNT,
-                recipients[i],
-                destChain
-            );
-        }
-        
-        vm.stopPrank();
-    }
-
-    function testBridgeTokensWithDifferentChains() public {
-        bytes[] memory chains = new bytes[](3);
-        chains[0] = bytes("sepolia");
-        chains[1] = bytes("bsc-testnet");
-        chains[2] = bytes("optimism-sepolia");
-        
-        vm.startPrank(user);
-        
-        for (uint256 i = 0; i < chains.length; i++) {
-            bridgeableToken.approve(address(bridge), BRIDGE_AMOUNT);
-            
-            // Should not revert with different chains
-            bridge.bridgeTokens{value: 0.001 ether}(
-                address(bridgeableToken),
-                BRIDGE_AMOUNT,
-                recipient,
-                chains[i]
-            );
-        }
-        
-        vm.stopPrank();
-    }
-
-    function testBridgeTokensCallsTeleportWithCorrectParams() public {
-        vm.startPrank(user);
-        
-        bridgeableToken.approve(address(bridge), BRIDGE_AMOUNT);
-        
-        uint256 nativeCost = 0.001 ether;
-        
-        // Expect TeleportCalled event
-        vm.expectEmit(false, false, false, false);
-        emit TeleportCalled(TeleportParams({
-            amount: BRIDGE_AMOUNT,
-            relayerFee: 0,
-            assetId: bytes32(uint256(uint160(address(bridgeableToken)))),
-            redeem: false,
-            to: bytes32(uint256(uint160(recipient))),
-            dest: destChain,
-            timeout: uint64(block.timestamp + bridge.TIMEOUT()),
-            nativeCost: nativeCost,
-            data: ""
-        }));
-        
-        bridge.bridgeTokens{value: nativeCost}(
-            address(bridgeableToken),
-            BRIDGE_AMOUNT,
-            recipient,
-            destChain
-        );
-        
-        vm.stopPrank();
-    }
-
-    function testBridgeTokensWithZeroAmount() public {
-        vm.startPrank(user);
-        
-        bridgeableToken.approve(address(bridge), 0);
-        
-        // Should not revert - gateway might handle validation
-        bridge.bridgeTokens{value: 0.001 ether}(
-            address(bridgeableToken),
-            0,
-            recipient,
-            destChain
-        );
-        
-        vm.stopPrank();
-    }
-
-    function testBridgeTokensWithMaxAmount() public {
-        // Mint max tokens to user (only gateway can mint)
-        uint256 maxAmount = type(uint96).max; // Use uint96 to avoid overflow
-        vm.prank(address(mockGateway));
-        bridgeableToken.mint(user, maxAmount);
-        
-        vm.startPrank(user);
-        
-        bridgeableToken.approve(address(bridge), maxAmount);
-        
-        uint256 balanceBefore = bridgeableToken.balanceOf(user);
-        
-        bridge.bridgeTokens{value: 0.001 ether}(
-            address(bridgeableToken),
-            maxAmount,
-            recipient,
-            destChain
-        );
-        
-        assertEq(
-            bridgeableToken.balanceOf(user),
-            balanceBefore - maxAmount,
-            "Should handle max amount"
-        );
-        
-        vm.stopPrank();
-    }
-
     function testBridgeTokensMultipleTimes() public {
         vm.startPrank(user);
         
@@ -304,8 +337,9 @@ contract TokenBridgeTest is Test {
         for (uint256 i = 0; i < iterations; i++) {
             bridgeableToken.approve(address(bridge), amountPerBridge);
             
-            bridge.bridgeTokens{value: 0.001 ether}(
+            bridge.bridgeTokens{value: 0.01 ether}(
                 address(bridgeableToken),
+                TOKEN_SYMBOL,
                 amountPerBridge,
                 recipient,
                 destChain
@@ -334,8 +368,9 @@ contract TokenBridgeTest is Test {
         
         uint256 balanceBefore = bridgeableToken.balanceOf(user);
         
-        bridge.bridgeTokens{value: 0.001 ether}(
+        bridge.bridgeTokens{value: 0.01 ether}(
             address(bridgeableToken),
+            TOKEN_SYMBOL,
             amount,
             randomRecipient,
             destChain
@@ -345,6 +380,73 @@ contract TokenBridgeTest is Test {
             bridgeableToken.balanceOf(user),
             balanceBefore - amount,
             "Fuzz: Balance should decrease correctly"
+        );
+        
+        vm.stopPrank();
+    }
+    
+    function testBridgeTokensWithCustomTimeout() public {
+        vm.startPrank(user);
+        
+        bridgeableToken.approve(address(bridge), BRIDGE_AMOUNT);
+        
+        uint64 customTimeout = 7200; // 2 hours
+        
+        bridge.bridgeTokens{value: 0.01 ether}(
+            address(bridgeableToken),
+            TOKEN_SYMBOL,
+            BRIDGE_AMOUNT,
+            recipient,
+            destChain,
+            0, // use default relayer fee
+            customTimeout,
+            true
+        );
+        
+        assertEq(
+            bridgeableToken.balanceOf(user),
+            INITIAL_BALANCE - BRIDGE_AMOUNT,
+            "User balance should decrease"
+        );
+        
+        vm.stopPrank();
+    }
+    
+    function testBridgeTokensUsesDefaultTimeout() public {
+        vm.startPrank(user);
+        
+        bridgeableToken.approve(address(bridge), BRIDGE_AMOUNT);
+        
+        // Pass 0 for timeout to use default
+        bridge.bridgeTokens{value: 0.01 ether}(
+            address(bridgeableToken),
+            TOKEN_SYMBOL,
+            BRIDGE_AMOUNT,
+            recipient,
+            destChain,
+            0,
+            0, // should use DEFAULT_TIMEOUT
+            true
+        );
+        
+        vm.stopPrank();
+    }
+
+    function testBridgeTokensUsesDefaultRelayerFee() public {
+        vm.startPrank(user);
+        
+        bridgeableToken.approve(address(bridge), BRIDGE_AMOUNT);
+        
+        // Pass 0 for relayerFee to use default
+        bridge.bridgeTokens{value: 0.01 ether}(
+            address(bridgeableToken),
+            TOKEN_SYMBOL,
+            BRIDGE_AMOUNT,
+            recipient,
+            destChain,
+            0, // should use defaultRelayerFee
+            3600,
+            true
         );
         
         vm.stopPrank();

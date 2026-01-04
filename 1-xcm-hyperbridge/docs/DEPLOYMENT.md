@@ -52,17 +52,21 @@ ETH_FROM=0x5984A519fFfE5aFc5e8bBA233DCc01AC774f4301 forge script script/Deployme
   --account defaultKey \
   --sender 0x5984A519fFfE5aFc5e8bBA233DCc01AC774f4301 \
   --broadcast \
+  --verifier etherscan \
+  --etherscan-api-key <API_KEY> \
   -vvvvv
 ```
 
 ### Deploy on BSC Testnet
 
 ```bash
-forge script script/Deployment.s.sol:DeploymentScript \
+ETH_FROM=0x5984A519fFfE5aFc5e8bBA233DCc01AC774f4301 forge script script/Deployment.s.sol:DeploymentScript \
   --rpc-url bsc-testnet \
   --account defaultKey \
   --sender <YOUR_ADDRESS> \
   --broadcast \
+  --verifier etherscan \
+  --etherscan-api-key <API_KEY> \
   -vvvvv
 ```
 
@@ -74,6 +78,8 @@ ETH_FROM=0x5984A519fFfE5aFc5e8bBA233DCc01AC774f4301 forge script script/Deployme
   --account defaultKey \
   --sender 0x5984A519fFfE5aFc5e8bBA233DCc01AC774f4301 \
   --broadcast \
+  --verifier etherscan \
+  --etherscan-api-key <API_KEY> \
   -vvvvv
 ```
 

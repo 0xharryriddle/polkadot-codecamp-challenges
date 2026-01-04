@@ -9,21 +9,48 @@ import {MockToken} from "../src/MockToken.sol";
 
 contract DeploymentScript is BaseScript {
     function run() external broadcast returns (BridgeableToken testToken, MockToken feeToken, TokenBridge bridge) {
-        // Get the deployed TokenGateway address
-        address tokenGatewayAddress = 0xFcDa26cA021d5535C3059547390E6cCd8De7acA6;
-
-        // Get the chainId of the current chain
+        // Determine network based on chain ID
         uint256 chainId = block.chainid;
+        string memory networkPrefix;
+        
+        if (chainId == 11155420) {
+            // Optimism Sepolia
+            networkPrefix = "optimism-sepolia";
+            console.log("Deploying to Optimism Sepolia (Chain ID: 11155420)");
+        } else if (chainId == 11155111) {
+            // Sepolia  
+            networkPrefix = "sepolia";
+            console.log("Deploying to Sepolia (Chain ID: 11155111)");
+        } else {
+            revert("Unsupported network. Chain ID not recognized.");
+        }
+        
+        // Read and parse the TOML file
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/deployments.toml");
+        string memory toml = vm.readFile(path);
+        
+        // Parse addresses from the specific network section
+        string memory tokenGatewayKey = string.concat(".", networkPrefix, ".token_gateway");
+        address tokenGatewayAddress = vm.parseTomlAddress(toml, tokenGatewayKey);
+        require(tokenGatewayAddress != address(0), "TokenGateway address not found in config");
+        console.log("TokenGateway address:", tokenGatewayAddress);
 
-        string memory testTokenName = string(abi.encodePacked("BridgeableToken on Chain ", abi.encodePacked(chainId)));
-        // Deploy a BridgeableToken token on a specified chain
-        testToken = new BridgeableToken(testTokenName, "BTK", tokenGatewayAddress);
+        string memory feeTokenKey = string.concat(".", networkPrefix, ".usd_fee_token");
+        address feeTokenAddress = vm.parseTomlAddress(toml, feeTokenKey);
+        require(feeTokenAddress != address(0), "Fee token address not found in config");
+        console.log("Fee token address:", feeTokenAddress);
         
-        string memory feeTokenName = string(abi.encodePacked("FeeToken on Chain ", abi.encodePacked(chainId)));
-        // Deploy a ERC20 token to be used as fee token
-        feeToken = new MockToken(feeTokenName, "FEE");
+        // Default relayer fee (0)
+        uint256 defaultRelayerFee = 0;
         
+        console.log("Deploying TokenBridge contract...");
         // Deploy the TokenBridge contract
-        bridge = new TokenBridge(tokenGatewayAddress, address(feeToken));
+        bridge = new TokenBridge(tokenGatewayAddress, feeTokenAddress, defaultRelayerFee);
+        
+        console.log("TokenBridge deployed at:", address(bridge));
+        console.log("Default relayer fee:", defaultRelayerFee);
+        console.log("");
+        console.log("Deployment complete!");
     }
 }

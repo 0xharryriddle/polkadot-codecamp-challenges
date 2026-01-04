@@ -1,3 +1,5 @@
+import { parseAbi } from "viem";
+
 // ERC-20 token ABI
 export const erc20Abi = [
   {
@@ -1656,768 +1658,6 @@ export const erc20AbiExtend = [
   }
 ];
 
-// Moonbeam SLpX ABI Contract 
-export const moonbeamSlpxAbi = [
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "previousAdmin",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "newAdmin",
-        "type": "address"
-      }
-    ],
-    "name": "AdminChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "beacon",
-        "type": "address"
-      }
-    ],
-    "name": "BeaconUpgraded",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "implementation",
-        "type": "address"
-      }
-    ],
-    "name": "Upgraded",
-    "type": "event"
-  },
-  {
-    "stateMutability": "payable",
-    "type": "fallback"
-  },
-  {
-    "inputs": [],
-    "name": "admin",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "admin_",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newAdmin",
-        "type": "address"
-      }
-    ],
-    "name": "changeAdmin",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "implementation",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "implementation_",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newImplementation",
-        "type": "address"
-      }
-    ],
-    "name": "upgradeTo",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newImplementation",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      }
-    ],
-    "name": "upgradeToAndCall",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "stateMutability": "payable",
-    "type": "receive"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "assetAddress",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint128",
-        "name": "amount",
-        "type": "uint128"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "dest_chain_id",
-        "type": "uint64"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "receiver",
-        "type": "bytes"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "remark",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint32",
-        "name": "channel_id",
-        "type": "uint32"
-      }
-    ],
-    "name": "CreateOrder",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "version",
-        "type": "uint8"
-      }
-    ],
-    "name": "Initialized",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "minter",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "assetAddress",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "callcode",
-        "type": "bytes"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "remark",
-        "type": "string"
-      }
-    ],
-    "name": "Mint",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "Paused",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "redeemer",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "assetAddress",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "callcode",
-        "type": "bytes"
-      }
-    ],
-    "name": "Redeem",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "Unpaused",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "BNCAddress",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "addressToAssetInfo",
-    "outputs": [
-      {
-        "internalType": "bytes2",
-        "name": "currencyId",
-        "type": "bytes2"
-      },
-      {
-        "internalType": "uint256",
-        "name": "operationalMin",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "bifrostParaId",
-    "outputs": [
-      {
-        "internalType": "uint32",
-        "name": "",
-        "type": "uint32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "assetAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "uint128",
-        "name": "amount",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint64",
-        "name": "dest_chain_id",
-        "type": "uint64"
-      },
-      {
-        "internalType": "bytes",
-        "name": "receiver",
-        "type": "bytes"
-      },
-      {
-        "internalType": "string",
-        "name": "remark",
-        "type": "string"
-      },
-      {
-        "internalType": "uint32",
-        "name": "channel_id",
-        "type": "uint32"
-      }
-    ],
-    "name": "create_order",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint64",
-        "name": "",
-        "type": "uint64"
-      }
-    ],
-    "name": "destChainInfo",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "is_evm",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "is_substrate",
-        "type": "bool"
-      },
-      {
-        "internalType": "bytes1",
-        "name": "raw_chain_index",
-        "type": "bytes1"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_BNCAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "uint32",
-        "name": "_bifrostParaId",
-        "type": "uint32"
-      },
-      {
-        "internalType": "bytes2",
-        "name": "_nativeCurrencyId",
-        "type": "bytes2"
-      }
-    ],
-    "name": "initialize",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "assetAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "remark",
-        "type": "string"
-      }
-    ],
-    "name": "mintVAsset",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "assetAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "remark",
-        "type": "string"
-      },
-      {
-        "internalType": "uint32",
-        "name": "channel_id",
-        "type": "uint32"
-      }
-    ],
-    "name": "mintVAssetWithChannelId",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "remark",
-        "type": "string"
-      }
-    ],
-    "name": "mintVNativeAsset",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "remark",
-        "type": "string"
-      },
-      {
-        "internalType": "uint32",
-        "name": "channel_id",
-        "type": "uint32"
-      }
-    ],
-    "name": "mintVNativeAssetWithChannelId",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "enum MoonbeamSlpx.Operation",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "name": "operationToFeeInfo",
-    "outputs": [
-      {
-        "internalType": "uint64",
-        "name": "transactRequiredWeightAtMost",
-        "type": "uint64"
-      },
-      {
-        "internalType": "uint256",
-        "name": "feeAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint64",
-        "name": "overallWeight",
-        "type": "uint64"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "pause",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "paused",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "vAssetAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
-      }
-    ],
-    "name": "redeemAsset",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "assetAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes2",
-        "name": "currencyId",
-        "type": "bytes2"
-      },
-      {
-        "internalType": "uint256",
-        "name": "minimumValue",
-        "type": "uint256"
-      }
-    ],
-    "name": "setAssetAddressInfo",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint64",
-        "name": "dest_chain_id",
-        "type": "uint64"
-      },
-      {
-        "internalType": "bool",
-        "name": "is_evm",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "is_substrate",
-        "type": "bool"
-      },
-      {
-        "internalType": "bytes1",
-        "name": "raw_chain_index",
-        "type": "bytes1"
-      }
-    ],
-    "name": "setDestChainInfo",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "enum MoonbeamSlpx.Operation",
-        "name": "_operation",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint64",
-        "name": "_transactRequiredWeightAtMost",
-        "type": "uint64"
-      },
-      {
-        "internalType": "uint64",
-        "name": "_overallWeight",
-        "type": "uint64"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_feeAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "setOperationToFeeInfo",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "unpause",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_logic",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "admin_",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_data",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "payable",
-    "type": "constructor"
-  }
-];
-
 // BridgeableToken ABI Contract
 export const bridgeableTokenAbi = [
   {
@@ -2647,44 +1887,229 @@ export const bridgeableTokenAbi = [
 // TokenBridge ABI for Hyperbridge cross-chain token bridging
 export const tokenBridgeAbi = [
   {
-    inputs: [
-      { name: "_tokenGateway", type: "address", internalType: "address" },
-      { name: "_feeToken", type: "address", internalType: "address" }
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "_tokenGateway",
+        "type": "address",
+        "internalType": "address"
+      },
+      { "name": "_feeToken", "type": "address", "internalType": "address" },
+      {
+        "name": "_defaultRelayerFee",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
     ],
-    stateMutability: "nonpayable",
-    type: "constructor"
+    "stateMutability": "nonpayable"
   },
   {
-    inputs: [],
-    name: "TIMEOUT",
-    outputs: [{ name: "", type: "uint64", internalType: "uint64" }],
-    stateMutability: "view",
-    type: "function"
+    "type": "function",
+    "name": "DEFAULT_TIMEOUT",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint64", "internalType": "uint64" }],
+    "stateMutability": "view"
   },
   {
-    inputs: [
-      { name: "token", type: "address", internalType: "address" },
-      { name: "amount", type: "uint256", internalType: "uint256" },
-      { name: "recipient", type: "address", internalType: "address" },
-      { name: "destChain", type: "bytes", internalType: "bytes" }
+    "type": "function",
+    "name": "bridgeTokens",
+    "inputs": [
+      { "name": "token", "type": "address", "internalType": "address" },
+      { "name": "symbol", "type": "string", "internalType": "string" },
+      { "name": "amount", "type": "uint256", "internalType": "uint256" },
+      { "name": "recipient", "type": "address", "internalType": "address" },
+      { "name": "destChain", "type": "bytes", "internalType": "bytes" }
     ],
-    name: "bridgeTokens",
-    outputs: [],
-    stateMutability: "payable",
-    type: "function"
+    "outputs": [],
+    "stateMutability": "payable"
   },
   {
-    inputs: [],
-    name: "feeToken",
-    outputs: [{ name: "", type: "address", internalType: "address" }],
-    stateMutability: "view",
-    type: "function"
+    "type": "function",
+    "name": "bridgeTokens",
+    "inputs": [
+      { "name": "token", "type": "address", "internalType": "address" },
+      { "name": "symbol", "type": "string", "internalType": "string" },
+      { "name": "amount", "type": "uint256", "internalType": "uint256" },
+      { "name": "recipient", "type": "address", "internalType": "address" },
+      { "name": "destChain", "type": "bytes", "internalType": "bytes" },
+      { "name": "relayerFee", "type": "uint256", "internalType": "uint256" },
+      { "name": "timeout", "type": "uint64", "internalType": "uint64" },
+      { "name": "redeem", "type": "bool", "internalType": "bool" },
+      { "name": "feeAmount", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
   },
   {
-    inputs: [],
-    name: "tokenGateway",
-    outputs: [{ name: "", type: "address", internalType: "contract ITokenGateway" }],
-    stateMutability: "view",
-    type: "function"
-  }
-] as const;
+    "type": "function",
+    "name": "bridgeTokens",
+    "inputs": [
+      { "name": "token", "type": "address", "internalType": "address" },
+      { "name": "symbol", "type": "string", "internalType": "string" },
+      { "name": "amount", "type": "uint256", "internalType": "uint256" },
+      { "name": "recipient", "type": "address", "internalType": "address" },
+      { "name": "destChain", "type": "bytes", "internalType": "bytes" },
+      { "name": "relayerFee", "type": "uint256", "internalType": "uint256" },
+      { "name": "timeout", "type": "uint64", "internalType": "uint64" },
+      { "name": "redeem", "type": "bool", "internalType": "bool" }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "bridgeTokensWithAssetId",
+    "inputs": [
+      { "name": "token", "type": "address", "internalType": "address" },
+      { "name": "assetId", "type": "bytes32", "internalType": "bytes32" },
+      { "name": "amount", "type": "uint256", "internalType": "uint256" },
+      { "name": "recipient", "type": "address", "internalType": "address" },
+      { "name": "destChain", "type": "bytes", "internalType": "bytes" },
+      { "name": "relayerFee", "type": "uint256", "internalType": "uint256" },
+      { "name": "timeout", "type": "uint64", "internalType": "uint64" },
+      { "name": "redeem", "type": "bool", "internalType": "bool" },
+      { "name": "feeAmount", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "bridgeTokensWithAssetId",
+    "inputs": [
+      { "name": "token", "type": "address", "internalType": "address" },
+      { "name": "assetId", "type": "bytes32", "internalType": "bytes32" },
+      { "name": "amount", "type": "uint256", "internalType": "uint256" },
+      { "name": "recipient", "type": "address", "internalType": "address" },
+      { "name": "destChain", "type": "bytes", "internalType": "bytes" },
+      { "name": "relayerFee", "type": "uint256", "internalType": "uint256" },
+      { "name": "timeout", "type": "uint64", "internalType": "uint64" },
+      { "name": "redeem", "type": "bool", "internalType": "bool" }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "defaultRelayerFee",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "estimateFee",
+    "inputs": [
+      { "name": "destChain", "type": "bytes", "internalType": "bytes" },
+      { "name": "amount", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "feeToken",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getAssetId",
+    "inputs": [
+      { "name": "symbol", "type": "string", "internalType": "string" }
+    ],
+    "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "getERC20Address",
+    "inputs": [
+      { "name": "assetId", "type": "bytes32", "internalType": "bytes32" }
+    ],
+    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setDefaultRelayerFee",
+    "inputs": [
+      {
+        "name": "newRelayerFee",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "tokenGateway",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract ITokenGateway"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "TokensBridged",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "assetId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "sender",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "recipient",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "destination",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
+      },
+      {
+        "name": "commitment",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  { "type": "error", "name": "InvalidAmount", "inputs": [] },
+  { "type": "error", "name": "InvalidRecipient", "inputs": [] },
+  { "type": "error", "name": "TokenTransferFailed", "inputs": [] },
+  { "type": "error", "name": "ZeroAddress", "inputs": [] }
+];
+
+export const dripFunctionAbi = parseAbi(["function drip(address token) public"]);

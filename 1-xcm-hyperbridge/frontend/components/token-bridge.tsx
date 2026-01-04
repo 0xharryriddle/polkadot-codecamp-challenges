@@ -293,18 +293,22 @@ export default function TokenBridge() {
     return () => subscription.unsubscribe();
   }, [form, tokenDecimals, tokenAllowance]);
 
-  // Auto-trigger bridge after approval is confirmed
+  // Refetch token data when approval is confirmed
   useEffect(() => {
-    if (isApproveConfirmed && !bridgeHash && !isBridgePending) {
-      // Refetch to get updated allowance
-      refetchTokenData().then(() => {
-        // Small delay to ensure state updates
-        setTimeout(() => {
-          executeBridge();
-        }, 500);
-      });
+    if (isApproveConfirmed) {
+      refetchTokenData();
     }
-  }, [isApproveConfirmed]);
+  }, [isApproveConfirmed, refetchTokenData]);
+
+  // Auto-trigger bridge after approval is confirmed and allowance updated
+  useEffect(() => {
+    if (isApproveConfirmed && !bridgeHash && !isBridgePending && !needsApproval) {
+      // Small delay to ensure state updates
+      setTimeout(() => {
+        executeBridge();
+      }, 100);
+    }
+  }, [isApproveConfirmed, needsApproval, bridgeHash, isBridgePending]);
 
   // Check if on correct chain
   const isOnCorrectChain = account.chainId === selectedPair.source.id;
@@ -361,7 +365,7 @@ export default function TokenBridge() {
   // Execute bridge after approval
   async function executeBridge() {
     const values = form.getValues();
-    if (!activeAddress || !tokenDecimals || !bridgeContract) return;
+    if (!activeAddress || !tokenDecimals || !bridgeContract || !tokenSymbol) return;
 
     const amount = parseUnits(values.amount, tokenDecimals);
     const destChainId = chainIdentifiers[selectedPair.destination.id];
@@ -374,7 +378,7 @@ export default function TokenBridge() {
           address: bridgeContract,
           abi: tokenBridgeAbi,
           functionName: 'bridgeTokens',
-          args: [effectiveTokenAddress, amount, values.recipient as Address, destChainBytes as `0x${string}`],
+          args: [effectiveTokenAddress, tokenSymbol, amount, values.recipient as Address, destChainBytes as `0x${string}`],
           chainId: selectedPair.source.id as SupportedChainId,
         });
       } else {
@@ -382,7 +386,7 @@ export default function TokenBridge() {
           address: bridgeContract,
           abi: tokenBridgeAbi,
           functionName: 'bridgeTokens',
-          args: [effectiveTokenAddress, amount, values.recipient as Address, destChainBytes as `0x${string}`],
+          args: [effectiveTokenAddress, tokenSymbol, amount, values.recipient as Address, destChainBytes as `0x${string}`],
           chainId: selectedPair.source.id as SupportedChainId,
         });
       }
@@ -697,10 +701,15 @@ export default function TokenBridge() {
                 )}
               />
 
-              {isApprovePending || isBridgePending || isApproveConfirming ? (
+              {isApprovePending || isBridgePending || isApproveConfirming || isBridgeConfirming ? (
                 <Button type="submit" disabled className="w-full">
                   <LoaderCircle className="w-4 h-4 animate-spin mr-2" /> 
                   {isApprovePending || isApproveConfirming ? "Approving..." : "Bridging..."}
+                </Button>
+              ) : isApproveConfirmed && !needsApproval ? (
+                <Button type="submit" className="w-full">
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                  Bridge Tokens
                 </Button>
               ) : (
                 <Button type="submit" className="w-full">
