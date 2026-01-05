@@ -12,17 +12,21 @@ import {
 } from '@luno-kit/react/connectors';
 import { LunoKitProvider } from '@luno-kit/ui';
 
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || '';
+
 const connectors = [
   polkadotjsConnector(),
   subwalletConnector(),
   talismanConnector(),
   polkagateConnector(),
-  walletConnectConnector({ projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_ID }),
-  novaConnector({ projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_ID }),
+  ...(walletConnectProjectId ? [
+    walletConnectConnector({ projectId: walletConnectProjectId }),
+    novaConnector({ projectId: walletConnectProjectId }),
+  ] : []),
 ];
 
 const lunoConfig = createConfig({
-  appName: 'LunoKit Next.js App Router Example',
+  appName: 'Polkadot Staking Agent',
   chains: [polkadot, kusama, westend],
   connectors,
   autoConnect: true,

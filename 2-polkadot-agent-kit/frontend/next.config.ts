@@ -1,7 +1,11 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /* Transpile Polkadot packages */
+  transpilePackages: [
+    '@polkadot/api',
+    '@polkadot/util',
+  ],
 };
 
 export default nextConfig;
