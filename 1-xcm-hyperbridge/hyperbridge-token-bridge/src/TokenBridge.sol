@@ -108,16 +108,12 @@ contract TokenBridge {
             IERC20(feeToken).approve(address(tokenGateway), type(uint256).max);
         }
 
-        // Convert recipient address to bytes32 (left-padded for EVM chains)
         bytes32 recipientBytes32 = bytes32(uint256(uint160(recipient)));
 
-        // Use provided relayerFee or default
         uint256 finalRelayerFee = relayerFee == 0 ? defaultRelayerFee : relayerFee;
 
-        // Use provided timeout or default
         uint64 finalTimeout = timeout == 0 ? DEFAULT_TIMEOUT : timeout;
 
-        // Prepare teleport parameters
         TeleportParams memory teleportParams = TeleportParams({
             amount: amount,
             relayerFee: finalRelayerFee,
@@ -126,15 +122,11 @@ contract TokenBridge {
             to: recipientBytes32,
             dest: destChain,
             timeout: finalTimeout,
-            nativeCost: msg.value, // Use native token sent with transaction for fees
-            data: "" // Empty data for simple token transfers
+            nativeCost: msg.value,
+            data: ""
         });
-
-        // Initiate the cross-chain transfer
         tokenGateway.teleport{value: msg.value}(teleportParams);
 
-        // Emit event for tracking
-        // Note: We can't get the commitment from the call, but the TokenGateway will emit AssetTeleported
         emit TokensBridged(
             token,
             assetId,
@@ -142,7 +134,7 @@ contract TokenBridge {
             msg.sender,
             recipientBytes32,
             destChain,
-            bytes32(0) // Commitment will be in TokenGateway's AssetTeleported event
+            bytes32(0)
         );
     }
 

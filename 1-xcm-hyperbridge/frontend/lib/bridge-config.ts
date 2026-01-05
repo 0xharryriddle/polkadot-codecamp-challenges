@@ -42,7 +42,7 @@ export const bridgeConfigs: Record<number, BridgeConfig> = {
         tokenGateway: "0xFcDa26cA021d5535C3059547390E6cCd8De7acA6",
         feeToken: "0xA801da100bF16D07F668F4A49E1f71fc54D05177", // USDH
         defaultBridgeToken: "0x4200000000000000000000000000000000000006", // WETH
-        tokenFaucet: "0x1794aB22388303ce9Cb798bE966eeEBeFe59C3a3",
+        tokenFaucet: "0x1794aB22388303ce9Cb798bE966eeEBeFe59C3a3", // Faucet the feeToken
     },
     // Paseo Testnet
     420420420: {
