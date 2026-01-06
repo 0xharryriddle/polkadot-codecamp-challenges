@@ -8,21 +8,29 @@ async function deploy() {
   deployerAddress = account.address;
   console.log(`Deploying contracts using ${deployerAddress}`);
 
-  // Deploy ERC20
+  // Deploy Token Faucet
+  console.log("Deploying TokenFaucet...");
+  const faucetFactory = await ethers.getContractFactory("TokenFaucet");
+  const faucetInstance = await faucetFactory.deploy();
+  await faucetInstance.waitForDeployment();
+  const faucetAddress = await faucetInstance.getAddress();
+  console.log(`Faucet deployed to : ${faucetAddress}`);
+
+  // Deploy ERC20 - 1
   console.log("Deploying HarryToken...");
-  const uniswapV2ERC20 = await ethers.getContractFactory("UniswapV2ERC20");
-  const uniswapV2ERC20Instance = await uniswapV2ERC20.deploy();
-  await uniswapV2ERC20Instance.waitForDeployment();
+  const harryTokenFactory = await ethers.getContractFactory("UniswapV2ERC20");
+  const harryToken = await harryTokenFactory.deploy(faucetAddress);
+  await harryToken.waitForDeployment();
   console.log(
-    `HarryToken deployed to : ${await uniswapV2ERC20Instance.getAddress()}`
+    `HarryToken deployed to : ${await harryToken.getAddress()}`
   );
 
-  // DEploy WETH
-  console.log("Deploying WETH...");
-  const wethFactory = await ethers.getContractFactory("WETH");
-  const weth = await wethFactory.deploy();
-  await weth.waitForDeployment();
-  console.log(`WETH deployed to : ${await weth.getAddress()}`);
+  // DEploy ERC20 - 2 (RiddleToken)
+  console.log("Deploying RiddleToken...");
+  const riddleTokenFactory = await ethers.getContractFactory("UniswapV2ERC20");
+  const riddleToken = await riddleTokenFactory.deploy(faucetAddress);
+  await riddleToken.waitForDeployment();
+  console.log(`RiddleToken deployed to : ${await riddleToken.getAddress()}`);
 
   //Deploy Factory
   console.log("Deploying UniswapV2Factory...");
@@ -30,6 +38,25 @@ async function deploy() {
   const factoryInstance = await factory.deploy(deployerAddress);
   await factoryInstance.waitForDeployment();
   console.log(`Factory deployed to : ${await factoryInstance.getAddress()}`);
+
+  // Drip
+  console.log("Dripping tokens from Faucet...");
+  const dripAmount = ethers.parseUnits("1000", 18);
+
+  let dripTx = await faucetInstance.drip(
+    await harryToken.getAddress(),
+    dripAmount
+  );
+  await dripTx.wait();
+  console.log(`Dripped ${dripAmount} HarryToken to ${deployerAddress}`);
+
+  dripTx = await faucetInstance.drip(
+    await riddleToken.getAddress(),
+    dripAmount
+  );
+  await dripTx.wait();
+  console.log(`Dripped ${dripAmount} RiddleToken to ${deployerAddress}`);
+
 
   // Deploy Pair using JsonRpcProvider to bypass size limits
   console.log("Deploying UniswapV2Pair...");
@@ -46,10 +73,10 @@ async function deploy() {
 
   let privateKey;
   if (networkName === "localNode") {
-    privateKey = process.env.LOCAL_PRIV_KEY;
+    privateKey = process.env.LOCAL_PRIVATE_KEY;
   }
-  if (networkName === "paseoAssetHub") {
-    privateKey = process.env.AH_PRIV_KEY;
+  if (networkName === "polkadotHubTestnet") {
+    privateKey = process.env.PRIVATE_KEY;
   }
 
   const wallet = new ethers.Wallet(privateKey, provider);
@@ -63,16 +90,17 @@ async function deploy() {
   const pairInstance = await pairFactory.deploy();
   console.log(`Pair deployed to : ${await pairInstance.getAddress()}`);
 
-  console.log(`Creating pair for WETH and ERC20...`);
+  console.log(`Creating pair for HarryToken and RiddleToken...`);
+  await new Promise(resolve => setTimeout(resolve, 2000));
   const pairTx = await factoryInstance.createPair(
-    await uniswapV2ERC20Instance.getAddress(),
-    await weth.getAddress()
+    await harryToken.getAddress(),
+    await riddleToken.getAddress()
   );
   await pairTx.wait();
 
   const checkedPair = await factoryInstance.getPair(
-    await uniswapV2ERC20Instance.getAddress(),
-    await weth.getAddress()
+    await harryToken.getAddress(),
+    await riddleToken.getAddress()
   );
 
   console.log(`Pair created at address: ${checkedPair}`);

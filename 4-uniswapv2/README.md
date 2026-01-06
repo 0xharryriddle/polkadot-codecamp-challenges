@@ -13,8 +13,8 @@ A decentralized exchange (DEX) implementation based on Uniswap V2's architecture
 
 Link contract: [Contract](./)
 
-- [ ] **Write scripts to Deploy a factory, pair, and ERC20 token contracts on Paseo Asset Hub**
-- [ ] **Write test cases** 
+- [x] **Write scripts to Deploy a factory, pair, and ERC20 token contracts on Paseo Asset Hub**
+- [x] **Write test cases** 
 
 
 ## Implementation UI Requirements 

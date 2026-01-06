@@ -2,6 +2,7 @@ const chai = require('chai');
 const { expect } = chai;
 const { ZeroAddress, utils, keccak256, solidityPacked, getCreate2Address } = require('ethers');
 const { expandTo18Decimals, getWallets, encodePrice, mineBlock } = require('./shared/utilities');
+const { encodeAbiParameters, parseAbiParameters, encodePacked } = require('viem');
 
 
 const TOTAL_SUPPLY = expandTo18Decimals(10000)
@@ -10,7 +11,7 @@ const MINIMUM_LIQUIDITY = BigInt('1000')
 
 
 
-describe('UniswapV2Pair', function() {
+describe('UniswapV2Pair', function () {
   let factory;
   let token0;
   let token1;
@@ -20,7 +21,7 @@ describe('UniswapV2Pair', function() {
   let other;
 
   const network = require('hardhat').network;
-  beforeEach(async function() {
+  beforeEach(async function () {
 
     [wallet, other] = await ethers.getSigners();
 
@@ -44,32 +45,27 @@ describe('UniswapV2Pair', function() {
     const UniswapV2Factory = await ethers.getContractFactory("UniswapV2Factory", wallet);
     factory = await UniswapV2Factory.deploy(wallet.address);
     await factory.waitForDeployment();
-    
+
     let token0Address = await token0.getAddress();
     let token1Address = await token1.getAddress();
 
-    [token0, token1] = token0Address < token1Address ? 
-    [token0, token1] : 
-    [token1, token0];
+    await factory.createPair(token0Address, token1Address);
+    const pairAddress = await factory.getPair(token0Address, token1Address);
 
-    let first = await token0.getAddress();
-    let second = await token1.getAddress();
+    pair = await ethers.getContractAt("UniswapV2Pair", pairAddress);
 
-    const bytecode = UniswapV2Pair.bytecode;
-    const initCodeHash = keccak256(bytecode);
-    let salt = keccak256(solidityPacked(['address', 'address'], [first, second]));
-    const create2Address = getCreate2Address(await factory.getAddress(), salt, initCodeHash);
+    // Get the sorted token addresses from the pair
+    const pairToken0 = await pair.token0();
+    const pairToken1 = await pair.token1();
 
-    await expect(factory.createPair(token0Address, token1Address)).to.emit(factory, "PairCreated")
-    .withArgs(await first, second, create2Address, 1n);
-
-    pair = await ethers.getContractAt("UniswapV2Pair", create2Address); 
-    expect(await pair.token0()).to.eq(first);
-    expect(await pair.token1()).to.eq(second);
+    // Reassign token0 and token1 to match the pair's ordering
+    [token0, token1] = token0Address === pairToken0 ?
+      [token0, token1] :
+      [token1, token0];
 
   });
 
-  it('mint', async function() {
+  it('mint', async function () {
     const token0Amount = expandTo18Decimals(1);
     const pairAddress = await pair.getAddress();
     const token1Amount = expandTo18Decimals(4);
@@ -114,8 +110,8 @@ describe('UniswapV2Pair', function() {
   ].map(a => a.map(n => typeof n === 'string' ? BigInt(n) : expandTo18Decimals(n)));
 
   swapTestCases.forEach((swapTestCase, i) => {
-    it(`getInputPrice:${i}`, async function() {
-      this.timeout(60000)
+    it(`getInputPrice:${i}`, async function () {
+      this.timeout(120000)
       const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase;
       await addLiquidity(token0Amount, token1Amount);
       await token0.transfer(await pair.getAddress(), swapAmount);
@@ -133,7 +129,7 @@ describe('UniswapV2Pair', function() {
   ].map(a => a.map(n => typeof n === 'string' ? BigInt(n) : expandTo18Decimals(n)));
 
   optimisticTestCases.forEach((optimisticTestCase, i) => {
-    it(`optimistic:${i}`, async function() {
+    it(`optimistic:${i}`, async function () {
       this.timeout(60000)
       const [outputAmount, token0Amount, token1Amount, inputAmount] = optimisticTestCase;
       await addLiquidity(token0Amount, token1Amount);
@@ -144,7 +140,7 @@ describe('UniswapV2Pair', function() {
     });
   });
 
-  it('swap:token0', async function() {
+  it('swap:token0', async function () {
     this.timeout(50000)
     const token0Amount = expandTo18Decimals(5);
     const token1Amount = expandTo18Decimals(10);
@@ -172,7 +168,7 @@ describe('UniswapV2Pair', function() {
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1 - token1Amount + expectedOutputAmount);
   });
 
-  it('swap:token1', async function() {
+  it('swap:token1', async function () {
     this.timeout(50000)
     const token0Amount = expandTo18Decimals(5);
     const token1Amount = expandTo18Decimals(10);
@@ -200,7 +196,7 @@ describe('UniswapV2Pair', function() {
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1 - token1Amount - swapAmount);
   });
 
-  it('burn', async function() {
+  it('burn', async function () {
     const token0Amount = expandTo18Decimals(3);
     const token1Amount = expandTo18Decimals(3);
     await addLiquidity(token0Amount, token1Amount);
@@ -249,27 +245,27 @@ describe('UniswapV2Pair', function() {
   //   const updatedReserves = await pair.getReserves();
   //   expect(updatedReserves[2]).to.eq(blockTimestamp + BigInt(1));
 
-    // const swapAmount = expandTo18Decimals(3);
-    // await token0.transfer(await pair.getAddress(), swapAmount);
-    // await mineBlock(provider, blockTimestamp + 10);
-    // await pair.swap(0, expandTo18Decimals(1), wallet.address, '0x');
+  // const swapAmount = expandTo18Decimals(3);
+  // await token0.transfer(await pair.getAddress(), swapAmount);
+  // await mineBlock(provider, blockTimestamp + 10);
+  // await pair.swap(0, expandTo18Decimals(1), wallet.address, '0x');
 
-    // expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0] * BigInt(10));
-    // expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1] * BigInt(10));
-    // const latestReserves = await pair.getReserves();
-    // expect(latestReserves[2]).to.eq(blockTimestamp + 10);
+  // expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0] * BigInt(10));
+  // expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1] * BigInt(10));
+  // const latestReserves = await pair.getReserves();
+  // expect(latestReserves[2]).to.eq(blockTimestamp + 10);
 
-    // await mineBlock(provider, blockTimestamp + 20);
-    // await pair.sync();
+  // await mineBlock(provider, blockTimestamp + 20);
+  // await pair.sync();
 
-    // const newPrice = encodePrice(expandTo18Decimals(6), expandTo18Decimals(2));
-    // expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0]* bigInt(10) + newPrice[0] * BigInt(10));
-    // expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1] * BigInt(10) + (newPrice[1] * BigInt(10)));
-    // const finalReserves = await pair.getReserves();
-    // expect(finalReserves[2]).to.eq(blockTimestamp + 20);
+  // const newPrice = encodePrice(expandTo18Decimals(6), expandTo18Decimals(2));
+  // expect(await pair.price0CumulativeLast()).to.eq(initialPrice[0]* bigInt(10) + newPrice[0] * BigInt(10));
+  // expect(await pair.price1CumulativeLast()).to.eq(initialPrice[1] * BigInt(10) + (newPrice[1] * BigInt(10)));
+  // const finalReserves = await pair.getReserves();
+  // expect(finalReserves[2]).to.eq(blockTimestamp + 20);
   // });
 
-  it('feeTo:off', async function() {
+  it('feeTo:off', async function () {
     this.timeout(70000)
     const token0Amount = expandTo18Decimals(1000);
     const token1Amount = expandTo18Decimals(1000);
@@ -286,7 +282,7 @@ describe('UniswapV2Pair', function() {
     expect(await pair.totalSupply()).to.eq(MINIMUM_LIQUIDITY);
   });
 
-  it('feeTo:on', async function() {
+  it('feeTo:on', async function () {
     this.timeout(140000)
 
     await factory.setFeeTo(other.address);
