@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import { Send, Bot, User, Loader2 } from "lucide-react";
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
 }
@@ -13,8 +13,8 @@ interface Message {
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
-      role: 'assistant',
+      id: "1",
+      role: "assistant",
       content: `👋 Hello! I'm your **Polkadot Staking Agent**.
 
 I can help you manage nomination pool staking on Polkadot, Kusama, and Westend.
@@ -31,12 +31,12 @@ What would you like to do?`,
       timestamp: new Date(),
     },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -48,20 +48,20 @@ What would you like to do?`,
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: input.trim(),
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
+    setInput("");
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
+      const response = await fetch("/api/chat", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           messages: [...messages, userMessage].map((m) => ({
@@ -75,18 +75,18 @@ What would you like to do?`,
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.message?.content || 'Sorry, I encountered an error.',
+        role: "assistant",
+        content: data.message?.content || "Sorry, I encountered an error.",
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Chat error:', error);
+      console.error("Chat error:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: '❌ Sorry, I encountered an error. Please try again.',
+        role: "assistant",
+        content: "❌ Sorry, I encountered an error. Please try again.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -96,7 +96,7 @@ What would you like to do?`,
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -105,29 +105,41 @@ What would you like to do?`,
   const formatContent = (content: string) => {
     // Simple markdown-like formatting
     return content
-      .split('\n')
+      .split("\n")
       .map((line, i) => {
         // Bold text
-        line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        // Code blocks
-        line = line.replace(/`([^`]+)`/g, '<code class="bg-gray-700 px-1 rounded text-sm">$1</code>');
+        line = line.replace(
+          /\*\*(.*?)\*\*/g,
+          "<strong class='text-pink-400'>$1</strong>"
+        );
+        // Inline code
+        line = line.replace(
+          /`([^`]+)`/g,
+          '<code class="bg-gray-700/70 px-2 py-0.5 rounded text-sm text-green-400 font-mono">$1</code>'
+        );
         // Headers
-        if (line.startsWith('# ')) {
-          return `<h1 class="text-xl font-bold mt-2">${line.slice(2)}</h1>`;
+        if (line.startsWith("# ")) {
+          return `<h1 class="text-xl font-bold mt-2 text-white">${line.slice(
+            2
+          )}</h1>`;
         }
-        if (line.startsWith('## ')) {
-          return `<h2 class="text-lg font-semibold mt-2">${line.slice(3)}</h2>`;
+        if (line.startsWith("## ")) {
+          return `<h2 class="text-lg font-semibold mt-2 text-white">${line.slice(
+            3
+          )}</h2>`;
         }
-        // List items
-        if (line.startsWith('- ')) {
-          return `<li class="ml-4">• ${line.slice(2)}</li>`;
+        // List items with better styling
+        if (line.startsWith("- ")) {
+          return `<div class="ml-4 flex items-start gap-2"><span class="text-pink-400 mt-0.5">•</span><span>${line.slice(
+            2
+          )}</span></div>`;
         }
         if (line.match(/^\d+\. /)) {
-          return `<li class="ml-4">${line}</li>`;
+          return `<div class="ml-4">${line}</div>`;
         }
-        return line || '<br/>';
+        return line || "<br/>";
       })
-      .join('\n');
+      .join("\n");
   };
 
   return (
@@ -153,17 +165,15 @@ What would you like to do?`,
           <div
             key={message.id}
             className={`flex gap-3 ${
-              message.role === 'user' ? 'flex-row-reverse' : ''
+              message.role === "user" ? "flex-row-reverse" : ""
             }`}
           >
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                message.role === 'user'
-                  ? 'bg-blue-600'
-                  : 'bg-pink-600'
+                message.role === "user" ? "bg-blue-600" : "bg-pink-600"
               }`}
             >
-              {message.role === 'user' ? (
+              {message.role === "user" ? (
                 <User className="w-5 h-5 text-white" />
               ) : (
                 <Bot className="w-5 h-5 text-white" />
@@ -171,19 +181,21 @@ What would you like to do?`,
             </div>
             <div
               className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                message.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-100'
+                message.role === "user"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-800 text-gray-100"
               }`}
             >
               <div
                 className="text-sm leading-relaxed whitespace-pre-wrap"
-                dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
+                dangerouslySetInnerHTML={{
+                  __html: formatContent(message.content),
+                }}
               />
               <span className="text-xs opacity-50 mt-1 block">
                 {message.timestamp.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </span>
             </div>
@@ -223,7 +235,7 @@ What would you like to do?`,
           </button>
         </div>
         <div className="mt-2 flex gap-2 flex-wrap">
-          {['Join pool #1', 'Get pool info', 'Claim rewards', 'Help'].map(
+          {["Join pool #1", "Get pool info", "Claim rewards", "Help"].map(
             (suggestion) => (
               <button
                 key={suggestion}

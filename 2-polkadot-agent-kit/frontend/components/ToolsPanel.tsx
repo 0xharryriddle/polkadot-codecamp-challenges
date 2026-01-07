@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, Wrench } from 'lucide-react';
+import { useState } from "react";
+import { ChevronDown, ChevronUp, Wrench } from "lucide-react";
 
 interface Tool {
+  id: string;
   name: string;
   description: string;
   icon: string;
@@ -11,34 +12,40 @@ interface Tool {
 
 const stakingTools: Tool[] = [
   {
-    name: 'join_pool',
-    description: 'Join a nomination pool with a specified amount',
-    icon: '🏊',
+    id: "join_pool",
+    name: "Join Pool",
+    description: "Join a nomination pool with a specified amount",
+    icon: "🏊",
   },
   {
-    name: 'bond_extra',
-    description: 'Add additional funds to your existing bond',
-    icon: '💰',
+    id: "bond_extra",
+    name: "Bond Extra",
+    description: "Add additional funds to your existing bond",
+    icon: "💰",
   },
   {
-    name: 'unbond',
-    description: 'Start the unbonding process for your funds',
-    icon: '🔓',
+    id: "unbond",
+    name: "Unbond",
+    description: "Start the unbonding process for your funds",
+    icon: "🔓",
   },
   {
-    name: 'withdraw_unbonded',
-    description: 'Withdraw funds after unbonding period',
-    icon: '💸',
+    id: "withdraw_unbonded",
+    name: "Withdraw Unbonded",
+    description: "Withdraw funds after unbonding period",
+    icon: "💸",
   },
   {
-    name: 'claim_rewards',
-    description: 'Claim your pending staking rewards',
-    icon: '🎁',
+    id: "claim_rewards",
+    name: "Claim Rewards",
+    description: "Claim your pending staking rewards",
+    icon: "🎁",
   },
   {
-    name: 'get_pool_info',
-    description: 'Get detailed information about a pool',
-    icon: '📊',
+    id: "get_pool_info",
+    name: "Get Pool Info",
+    description: "Get detailed information about a pool",
+    icon: "📊",
   },
 ];
 
@@ -57,7 +64,9 @@ export function ToolsPanel() {
           </div>
           <div className="text-left">
             <h3 className="font-semibold text-white">Available Tools</h3>
-            <p className="text-xs text-gray-400">{stakingTools.length} staking operations</p>
+            <p className="text-xs text-gray-400">
+              {stakingTools.length} staking operations
+            </p>
           </div>
         </div>
         {isExpanded ? (
@@ -71,7 +80,7 @@ export function ToolsPanel() {
         <div className="px-4 pb-4 space-y-2">
           {stakingTools.map((tool) => (
             <div
-              key={tool.name}
+              key={tool.id}
               className="bg-gray-700/50 rounded-lg p-3 hover:bg-gray-700 transition-colors cursor-pointer"
             >
               <div className="flex items-start gap-3">
@@ -80,7 +89,9 @@ export function ToolsPanel() {
                   <h4 className="text-white text-sm font-medium font-mono">
                     {tool.name}
                   </h4>
-                  <p className="text-xs text-gray-400 mt-1">{tool.description}</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {tool.description}
+                  </p>
                 </div>
               </div>
             </div>

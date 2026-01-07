@@ -1,7 +1,13 @@
-'use client';
+"use client";
 
-import { createConfig } from '@luno-kit/react';
-import { kusama, polkadot, westend } from '@luno-kit/react/chains';
+import { createConfig } from "@luno-kit/react";
+import {
+  kusama,
+  polkadot,
+  westend,
+  paseoAssetHub,
+  polkadotAssetHub,
+} from "@luno-kit/react/chains";
 import {
   novaConnector,
   polkadotjsConnector,
@@ -9,25 +15,27 @@ import {
   subwalletConnector,
   talismanConnector,
   walletConnectConnector,
-} from '@luno-kit/react/connectors';
-import { LunoKitProvider } from '@luno-kit/ui';
+} from "@luno-kit/react/connectors";
+import { LunoKitProvider } from "@luno-kit/ui";
 
-const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || '';
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || "";
 
 const connectors = [
   polkadotjsConnector(),
   subwalletConnector(),
   talismanConnector(),
   polkagateConnector(),
-  ...(walletConnectProjectId ? [
-    walletConnectConnector({ projectId: walletConnectProjectId }),
-    novaConnector({ projectId: walletConnectProjectId }),
-  ] : []),
+  ...(walletConnectProjectId
+    ? [
+        walletConnectConnector({ projectId: walletConnectProjectId }),
+        novaConnector({ projectId: walletConnectProjectId }),
+      ]
+    : []),
 ];
 
 const lunoConfig = createConfig({
-  appName: 'Polkadot Staking Agent',
-  chains: [polkadot, kusama, westend],
+  appName: "Polkadot Staking Agent",
+  chains: [polkadot, kusama, westend, paseoAssetHub, polkadotAssetHub],
   connectors,
   autoConnect: true,
 });
