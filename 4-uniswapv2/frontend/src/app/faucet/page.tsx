@@ -10,9 +10,12 @@ import { useAccount, useConfig, useReadContracts, useWriteContract, useWaitForTr
 import { useAtomValue } from "jotai";
 import { addressAtom } from "@/components/SigpassKit";
 import { localConfig } from "@/app/providers";
-import { Address, getAddress, formatUnits } from "viem";
+import { Address, getAddress, formatUnits, parseUnits } from "viem";
 import { getSigpassWallet } from "@/lib/sigpass";
 import { truncateHash } from "@/lib/utils";
+
+// Drip amount: 1000 tokens
+const DRIP_AMOUNT = parseUnits("1000", 18);
 
 interface Token {
   symbol: string;
@@ -94,7 +97,7 @@ export default function FaucetPage() {
         address: contractAddresses.TOKEN_FAUCET as Address,
         abi: tokenFaucetAbi,
         functionName: "drip",
-        args: [token.address as Address],
+        args: [token.address as Address, DRIP_AMOUNT],
       });
     } catch (error) {
       console.error("Claim failed:", error);

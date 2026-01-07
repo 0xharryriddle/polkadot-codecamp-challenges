@@ -12,6 +12,7 @@ import { useAtomValue } from "jotai";
 import { addressAtom } from "@/components/SigpassKit";
 import { localConfig } from "@/app/providers";
 import { Address, getAddress, parseUnits, formatUnits } from "viem";
+import { waitForTransactionReceipt } from "@wagmi/core";
 import { getSigpassWallet } from "@/lib/sigpass";
 
 interface Token {
@@ -183,8 +184,8 @@ export default function SwapPage() {
       const token0 = reservesData?.[1]?.result as string | undefined;
       const isFromToken0 = token0 && getAddress(fromToken.address).toLowerCase() === getAddress(token0).toLowerCase();
 
-      // Transfer tokens to pair
-      await writeContractAsync({
+      // Step 1: Transfer tokens to pair and wait for confirmation
+      const transferHash = await writeContractAsync({
         account: sigpassAddress ? await getSigpassWallet() : undefined,
         address: fromToken.address as Address,
         abi: erc20Abi,
@@ -192,7 +193,10 @@ export default function SwapPage() {
         args: [pairAddress as Address, amountIn],
       });
 
-      // Execute swap
+      // Wait for transfer to be confirmed before executing swap
+      await waitForTransactionReceipt(currentConfig, { hash: transferHash });
+
+      // Step 2: Execute swap
       await writeContractAsync({
         account: sigpassAddress ? await getSigpassWallet() : undefined,
         address: pairAddress as Address,

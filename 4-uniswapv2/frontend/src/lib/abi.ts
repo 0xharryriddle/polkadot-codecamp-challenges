@@ -406,24 +406,19 @@ export const uniswapV2PairAbi = [
 // TokenFaucet ABI
 export const tokenFaucetAbi = [
     {
-        inputs: [{ internalType: "address", name: "token", type: "address" }],
+        inputs: [{ internalType: "address", name: "token", type: "address" }, { internalType: "uint256", name: "amount", type: "uint256" }],
         name: "drip",
         outputs: [],
         stateMutability: "nonpayable",
         type: "function",
     },
     {
-        inputs: [{ internalType: "address", name: "", type: "address" }],
-        name: "tokens",
-        outputs: [{ internalType: "bool", name: "", type: "bool" }],
-        stateMutability: "view",
-        type: "function",
-    },
-    {
-        inputs: [{ internalType: "address", name: "token", type: "address" }, { internalType: "address", name: "to", type: "address" }, { internalType: "uint256", name: "amount", type: "uint256" }],
-        name: "mint",
-        outputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
+        anonymous: false,
+        inputs: [
+            { indexed: true, internalType: "address", name: "to", type: "address" },
+            { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
+        ],
+        name: "Drip",
+        type: "event",
     },
 ] as const;

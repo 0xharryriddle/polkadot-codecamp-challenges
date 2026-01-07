@@ -15,6 +15,7 @@ import { useAtomValue } from "jotai";
 import { addressAtom } from "@/components/SigpassKit";
 import { localConfig } from "@/app/providers";
 import { Address, getAddress, parseUnits, formatUnits } from "viem";
+import { waitForTransactionReceipt } from "@wagmi/core";
 import { getSigpassWallet } from "@/lib/sigpass";
 
 interface Pool {
@@ -186,25 +187,27 @@ export default function PoolsPage() {
       const amt0 = parseUnits(amount0, 18);
       const amt1 = parseUnits(amount1, 18);
 
-      // Transfer token0
-      await writeContractAsync({
+      // Step 1: Transfer token0 and wait for confirmation
+      const transfer0Hash = await writeContractAsync({
         account: sigpassAddress ? await getSigpassWallet() : undefined,
         address: selectedPool.token0.address as Address,
         abi: erc20Abi,
         functionName: "transfer",
         args: [selectedPool.pairAddress as Address, amt0],
       });
+      await waitForTransactionReceipt(currentConfig, { hash: transfer0Hash });
 
-      // Transfer token1
-      await writeContractAsync({
+      // Step 2: Transfer token1 and wait for confirmation
+      const transfer1Hash = await writeContractAsync({
         account: sigpassAddress ? await getSigpassWallet() : undefined,
         address: selectedPool.token1.address as Address,
         abi: erc20Abi,
         functionName: "transfer",
         args: [selectedPool.pairAddress as Address, amt1],
       });
+      await waitForTransactionReceipt(currentConfig, { hash: transfer1Hash });
 
-      // Mint LP tokens
+      // Step 3: Mint LP tokens
       await writeContractAsync({
         account: sigpassAddress ? await getSigpassWallet() : undefined,
         address: selectedPool.pairAddress as Address,
@@ -223,16 +226,17 @@ export default function PoolsPage() {
     try {
       const lpAmount = parseUnits(removeAmount, 18);
 
-      // Transfer LP tokens to pair
-      await writeContractAsync({
+      // Step 1: Transfer LP tokens to pair and wait for confirmation
+      const transferHash = await writeContractAsync({
         account: sigpassAddress ? await getSigpassWallet() : undefined,
         address: selectedPool.pairAddress as Address,
         abi: uniswapV2PairAbi,
         functionName: "transfer",
         args: [selectedPool.pairAddress as Address, lpAmount],
       });
+      await waitForTransactionReceipt(currentConfig, { hash: transferHash });
 
-      // Burn LP tokens
+      // Step 2: Burn LP tokens
       await writeContractAsync({
         account: sigpassAddress ? await getSigpassWallet() : undefined,
         address: selectedPool.pairAddress as Address,
