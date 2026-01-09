@@ -40,16 +40,12 @@ contract DeploymentScript is BaseScript {
         address feeTokenAddress = vm.parseTomlAddress(toml, feeTokenKey);
         require(feeTokenAddress != address(0), "Fee token address not found in config");
         console.log("Fee token address:", feeTokenAddress);
-        
-        // Default relayer fee (0)
-        uint256 defaultRelayerFee = 0;
-        
+    
         console.log("Deploying TokenBridge contract...");
         // Deploy the TokenBridge contract
-        bridge = new TokenBridge(tokenGatewayAddress, feeTokenAddress, defaultRelayerFee);
+        bridge = new TokenBridge(tokenGatewayAddress, feeTokenAddress);
         
         console.log("TokenBridge deployed at:", address(bridge));
-        console.log("Default relayer fee:", defaultRelayerFee);
         console.log("");
         console.log("Deployment complete!");
     }
