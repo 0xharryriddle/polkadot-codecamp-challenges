@@ -1,9 +1,6 @@
 "use client";
 
-// React imports
 import { useState, useEffect, useMemo } from "react";
-
-// Wagmi imports
 import {
   type BaseError,
   useWaitForTransactionReceipt,
@@ -13,13 +10,8 @@ import {
   useAccount,
   useSwitchChain,
 } from "wagmi";
-
-// Viem imports
 import { parseUnits, formatUnits, isAddress, Address, toHex } from "viem";
-
-// Lucide imports (for icons)
 import {
-  Ban,
   ExternalLink,
   ChevronDown,
   X,
@@ -29,18 +21,14 @@ import {
   ArrowRight,
   Wallet,
   RefreshCw,
+  Info,
+  Clock,
+  DollarSign,
 } from "lucide-react";
-
-// Zod imports
 import { z } from "zod";
-
-// Zod resolver imports
 import { zodResolver } from "@hookform/resolvers/zod";
-
-// React hook form imports
 import { useForm } from "react-hook-form";
 
-// UI imports
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -79,55 +67,42 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Utils imports
 import { truncateHash } from "@/lib/utils";
-
-// Component imports
 import CopyButton from "@/components/copy-button";
-
-// Library imports
 import { getSigpassWallet } from "@/lib/sigpass";
-import { useAtomValue } from 'jotai'
-import { addressAtom } from '@/components/sigpasskit'
+import { useAtomValue } from "jotai";
+import { addressAtom } from "@/components/sigpasskit";
 import { Skeleton } from "./ui/skeleton";
-import { localConfig, bridgeNetworkPairs, type BridgeNetworkPair } from "@/app/providers";
-import { bridgeConfigs, chainIdentifiers } from "@/lib/bridge-config";
-
-// ABI imports
+import {
+  localConfig,
+  bridgeNetworkPairs,
+  type BridgeNetworkPair,
+} from "@/app/providers";
+import {
+  bridgeConfigs,
+  chainIdentifiers,
+  DEFAULT_RELAYER_FEE,
+  DEFAULT_TIMEOUT,
+  isBridgeSupported,
+} from "@/lib/bridge-config";
 import { erc20AbiExtend, tokenBridgeAbi } from "@/lib/abi";
 
-// Supported chain IDs type
 type SupportedChainId = 420420420 | 11155111 | 97 | 11155420;
 
 export default function TokenBridge() {
-  // useConfig hook to get config
   const config = useConfig();
-
-  // useAccount hook to get account
   const account = useAccount();
-
-  // useSwitchChain hook
   const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain();
-
-  // useMediaQuery hook to check if the screen is desktop
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  
-  // useState hooks
+
   const [open, setOpen] = useState(false);
-  const [selectedPairIndex, setSelectedPairIndex] = useState<number>(0);
-  const [tokenAddress, setTokenAddress] = useState<Address | "">("");
+  const [selectedPairIndex, setSelectedPairIndex] = useState<number>(2);
   const [needsApproval, setNeedsApproval] = useState(true);
 
-  // get the address from session storage (sigpass wallet)
   const sigpassAddress = useAtomValue(addressAtom);
-  
-  // Determine active address (sigpass or connected wallet)
   const activeAddress = sigpassAddress || account.address;
-
-  // Selected network pair
   const selectedPair: BridgeNetworkPair = bridgeNetworkPairs[selectedPairIndex];
 
-  // useWriteContract hooks for approve and bridge
   const {
     data: approveHash,
     error: approveError,
@@ -148,97 +123,90 @@ export default function TokenBridge() {
     config: sigpassAddress ? localConfig : config,
   });
 
-  // Get bridge config for source chain
   const sourceBridgeConfig = bridgeConfigs[selectedPair.source.id];
   const bridgeContract = sourceBridgeConfig?.tokenBridge;
-  const defaultToken = sourceBridgeConfig?.defaultBridgeToken;
+  const usdcToken = sourceBridgeConfig?.defaultBridgeToken;
 
-  // Get token info
-  const effectiveTokenAddress = (tokenAddress || defaultToken || "0x0000000000000000000000000000000000000000") as Address;
-  
-  const { 
+  const {
     data: tokenData,
     refetch: refetchTokenData,
     isLoading: isLoadingTokenData,
-  } = useReadContracts({ 
+  } = useReadContracts({
     contracts: [
-      { 
-        address: effectiveTokenAddress,
+      {
+        address: usdcToken as Address,
         abi: erc20AbiExtend,
-        functionName: 'balanceOf',
+        functionName: "balanceOf",
         args: [activeAddress as Address],
         chainId: selectedPair.source.id as SupportedChainId,
       },
-      { 
-        address: effectiveTokenAddress,
+      {
+        address: usdcToken as Address,
         abi: erc20AbiExtend,
-        functionName: 'decimals',
-        chainId: selectedPair.source.id as SupportedChainId,
-      },
-      { 
-        address: effectiveTokenAddress,
-        abi: erc20AbiExtend,
-        functionName: 'symbol',
-        chainId: selectedPair.source.id as SupportedChainId,
-      },
-      { 
-        address: effectiveTokenAddress,
-        abi: erc20AbiExtend,
-        functionName: 'name',
+        functionName: "decimals",
         chainId: selectedPair.source.id as SupportedChainId,
       },
       {
-        address: effectiveTokenAddress,
+        address: usdcToken as Address,
         abi: erc20AbiExtend,
-        functionName: 'allowance',
+        functionName: "symbol",
+        chainId: selectedPair.source.id as SupportedChainId,
+      },
+      {
+        address: usdcToken as Address,
+        abi: erc20AbiExtend,
+        functionName: "allowance",
         args: [activeAddress as Address, bridgeContract as Address],
         chainId: selectedPair.source.id as SupportedChainId,
-      }
+      },
     ],
     config: sigpassAddress ? localConfig : config,
     query: {
-      enabled: !!activeAddress && !!effectiveTokenAddress && !!bridgeContract,
-    }
+      enabled:
+        !!activeAddress &&
+        !!usdcToken &&
+        !!bridgeContract &&
+        isBridgeSupported(selectedPair.source.id),
+    },
   });
 
-  // Extract token data
   const tokenBalance = tokenData?.[0]?.result as bigint | undefined;
   const tokenDecimals = tokenData?.[1]?.result as number | undefined;
   const tokenSymbol = tokenData?.[2]?.result as string | undefined;
-  const tokenAllowance = tokenData?.[4]?.result as bigint | undefined;
+  const tokenAllowance = tokenData?.[3]?.result as bigint | undefined;
 
-  // Form schema for bridge transaction
-  const formSchema = useMemo(() => z.object({
-    recipient: z
-      .string()
-      .min(2)
-      .max(50)
-      .refine((val) => val === "" || isAddress(val), {
-        message: "Invalid address format",
-      }) as z.ZodType<Address | "">,
-    amount: z
-      .string()
-      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-        message: "Amount must be a positive number",
-      })
-      .refine((val) => /^\d*\.?\d{0,18}$/.test(val), {
-        message: "Amount cannot have more than 18 decimal places",
-      })
-      .superRefine((val, ctx) => {
-        if (!tokenBalance || !tokenDecimals) return;
-        
-        const inputAmount = parseUnits(val, tokenDecimals);
-
-        if (inputAmount > tokenBalance) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Amount exceeds available balance",
-          });
-        }
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        recipient: z
+          .string()
+          .min(2)
+          .max(50)
+          .refine((val) => val === "" || isAddress(val), {
+            message: "Invalid address format",
+          }) as z.ZodType<Address | "">,
+        amount: z
+          .string()
+          .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+            message: "Amount must be a positive number",
+          })
+          .refine((val) => /^\d*\.?\d{0,18}$/.test(val), {
+            message: "Amount cannot have more than 18 decimal places",
+          })
+          .superRefine((val, ctx) => {
+            if (!tokenBalance || !tokenDecimals) return;
+            const inputAmount = parseUnits(val, tokenDecimals);
+            if (inputAmount > tokenBalance) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Amount exceeds available balance",
+              });
+            }
+          }),
       }),
-  }), [tokenBalance, tokenDecimals]);
+    [tokenBalance, tokenDecimals]
+  );
 
-  // Define form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -247,42 +215,32 @@ export default function TokenBridge() {
     },
   });
 
-  // Watch for transaction hashes and open dialog/drawer when received
   useEffect(() => {
-    if (bridgeHash) {
-      setOpen(true);
-    }
+    if (bridgeHash) setOpen(true);
   }, [bridgeHash]);
 
-  // Wait for approve transaction
   const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } =
     useWaitForTransactionReceipt({
       hash: approveHash,
       config: sigpassAddress ? localConfig : config,
     });
 
-  // Wait for bridge transaction
   const { isLoading: isBridgeConfirming, isSuccess: isBridgeConfirmed } =
     useWaitForTransactionReceipt({
       hash: bridgeHash,
       config: sigpassAddress ? localConfig : config,
     });
 
-  // Refetch token data when bridge is confirmed
   useEffect(() => {
-    if (isBridgeConfirmed) {
-      refetchTokenData();
-    }
+    if (isBridgeConfirmed) refetchTokenData();
   }, [isBridgeConfirmed, refetchTokenData]);
 
-  // Calculate if approval is needed based on current form amount
   useEffect(() => {
     const subscription = form.watch((value) => {
       if (!value.amount || !tokenDecimals || !tokenAllowance) {
         setNeedsApproval(true);
         return;
       }
-
       try {
         const amount = parseUnits(value.amount, tokenDecimals);
         setNeedsApproval(tokenAllowance < amount);
@@ -293,27 +251,23 @@ export default function TokenBridge() {
     return () => subscription.unsubscribe();
   }, [form, tokenDecimals, tokenAllowance]);
 
-  // Refetch token data when approval is confirmed
   useEffect(() => {
-    if (isApproveConfirmed) {
-      refetchTokenData();
-    }
+    if (isApproveConfirmed) refetchTokenData();
   }, [isApproveConfirmed, refetchTokenData]);
 
-  // Auto-trigger bridge after approval is confirmed and allowance updated
   useEffect(() => {
-    if (isApproveConfirmed && !bridgeHash && !isBridgePending && !needsApproval) {
-      // Small delay to ensure state updates
-      setTimeout(() => {
-        executeBridge();
-      }, 100);
+    if (
+      isApproveConfirmed &&
+      !bridgeHash &&
+      !isBridgePending &&
+      !needsApproval
+    ) {
+      setTimeout(() => executeBridge(), 100);
     }
   }, [isApproveConfirmed, needsApproval, bridgeHash, isBridgePending]);
 
-  // Check if on correct chain
   const isOnCorrectChain = account.chainId === selectedPair.source.id;
 
-  // Handle chain switch
   async function handleSwitchChain() {
     try {
       await switchChainAsync({ chainId: selectedPair.source.id });
@@ -322,39 +276,26 @@ export default function TokenBridge() {
     }
   }
 
-  // Submit handler - handles both approval and bridging
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!activeAddress || !tokenDecimals || !bridgeContract) return;
-
+    if (!activeAddress || !tokenDecimals || !bridgeContract || !usdcToken)
+      return;
     const amount = parseUnits(values.amount, tokenDecimals);
 
     try {
-      // Check if approval is needed
       const requiresApproval = !tokenAllowance || tokenAllowance < amount;
-
       if (requiresApproval) {
-        // First approve the bridge contract
-        if (sigpassAddress) {
-          await writeApproveAsync({
-            account: await getSigpassWallet(),
-            address: effectiveTokenAddress,
-            abi: erc20AbiExtend,
-            functionName: 'approve',
-            args: [bridgeContract, amount],
-            chainId: selectedPair.source.id as SupportedChainId,
-          });
-        } else {
-          await writeApproveAsync({
-            address: effectiveTokenAddress,
-            abi: erc20AbiExtend,
-            functionName: 'approve',
-            args: [bridgeContract, amount],
-            chainId: selectedPair.source.id as SupportedChainId,
-          });
-        }
-        // Bridge will be triggered automatically after approval via useEffect
+        const writeConfig = sigpassAddress
+          ? { account: await getSigpassWallet() }
+          : {};
+        await writeApproveAsync({
+          ...writeConfig,
+          address: usdcToken as Address,
+          abi: erc20AbiExtend,
+          functionName: "approve",
+          args: [bridgeContract, amount],
+          chainId: selectedPair.source.id as SupportedChainId,
+        });
       } else {
-        // Already approved, proceed directly to bridge
         await executeBridge();
       }
     } catch (error) {
@@ -362,40 +303,46 @@ export default function TokenBridge() {
     }
   }
 
-  // Execute bridge after approval
   async function executeBridge() {
     const values = form.getValues();
-    if (!activeAddress || !tokenDecimals || !bridgeContract || !tokenSymbol) return;
+    if (
+      !activeAddress ||
+      !tokenDecimals ||
+      !bridgeContract ||
+      !tokenSymbol ||
+      !usdcToken
+    )
+      return;
 
     const amount = parseUnits(values.amount, tokenDecimals);
     const destChainId = chainIdentifiers[selectedPair.destination.id];
     const destChainBytes = toHex(destChainId || "");
 
     try {
-      if (sigpassAddress) {
-        await writeBridgeAsync({
-          account: await getSigpassWallet(),
-          address: bridgeContract,
-          abi: tokenBridgeAbi,
-          functionName: 'bridgeTokens',
-          args: [effectiveTokenAddress, tokenSymbol, amount, values.recipient as Address, destChainBytes as `0x${string}`],
-          chainId: selectedPair.source.id as SupportedChainId,
-        });
-      } else {
-        await writeBridgeAsync({
-          address: bridgeContract,
-          abi: tokenBridgeAbi,
-          functionName: 'bridgeTokens',
-          args: [effectiveTokenAddress, tokenSymbol, amount, values.recipient as Address, destChainBytes as `0x${string}`],
-          chainId: selectedPair.source.id as SupportedChainId,
-        });
-      }
+      const writeConfig = sigpassAddress
+        ? { account: await getSigpassWallet() }
+        : {};
+      await writeBridgeAsync({
+        ...writeConfig,
+        address: bridgeContract,
+        abi: tokenBridgeAbi,
+        functionName: "bridgeTokensWithFee",
+        args: [
+          usdcToken as Address,
+          tokenSymbol,
+          amount,
+          values.recipient as Address,
+          destChainBytes as `0x${string}`,
+          DEFAULT_RELAYER_FEE,
+          DEFAULT_TIMEOUT,
+        ],
+        chainId: selectedPair.source.id as SupportedChainId,
+      });
     } catch (error) {
       console.error("Bridge failed:", error);
     }
   }
 
-  // Reset the form and transaction state
   function resetTransaction() {
     form.reset();
     resetApprove();
@@ -403,151 +350,162 @@ export default function TokenBridge() {
     setOpen(false);
   }
 
-  // Get block explorer URL for transaction
   function getExplorerUrl(hash: string, chainId: number) {
-    const chain = bridgeNetworkPairs.find(p => p.source.id === chainId || p.destination.id === chainId);
-    const targetChain = chain?.source.id === chainId ? chain.source : chain?.destination;
-    return targetChain?.blockExplorers?.default?.url 
+    const chain = bridgeNetworkPairs.find(
+      (p) => p.source.id === chainId || p.destination.id === chainId
+    );
+    const targetChain =
+      chain?.source.id === chainId ? chain.source : chain?.destination;
+    return targetChain?.blockExplorers?.default?.url
       ? `${targetChain.blockExplorers.default.url}/tx/${hash}`
       : `https://etherscan.io/tx/${hash}`;
   }
 
-  // Transaction status component
   const TransactionStatusContent = () => (
     <div className="flex flex-col gap-4">
-      {/* Step 1: Approval */}
       <div className="flex flex-col gap-2 p-4 border rounded-lg">
         <div className="flex items-center gap-2 font-medium">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm">1</span>
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-foreground text-background text-sm">
+            1
+          </span>
           Token Approval
         </div>
-        {approveHash ? (
+        {approveHash && (
           <div className="flex flex-row gap-2 items-center text-sm">
             <Hash className="w-4 h-4" />
-            <a 
-              className="flex flex-row gap-2 items-center underline underline-offset-4" 
-              href={getExplorerUrl(approveHash, selectedPair.source.id)} 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <a
+              className="flex flex-row gap-2 items-center underline underline-offset-4"
+              href={getExplorerUrl(approveHash, selectedPair.source.id)}
+              target="_blank"
             >
               {truncateHash(approveHash)}
               <ExternalLink className="w-4 h-4" />
             </a>
             <CopyButton copyText={approveHash} />
           </div>
-        ) : null}
+        )}
         {isApprovePending && (
-          <div className="flex flex-row gap-2 items-center text-yellow-500 text-sm">
-            <LoaderCircle className="w-4 h-4 animate-spin" /> Confirm in wallet...
+          <div className="flex flex-row gap-2 items-center text-muted-foreground text-sm">
+            <LoaderCircle className="w-4 h-4 animate-spin" /> Confirm in
+            wallet...
           </div>
         )}
         {isApproveConfirming && (
-          <div className="flex flex-row gap-2 items-center text-yellow-500 text-sm">
-            <LoaderCircle className="w-4 h-4 animate-spin" /> Waiting for confirmation...
+          <div className="flex flex-row gap-2 items-center text-muted-foreground text-sm">
+            <LoaderCircle className="w-4 h-4 animate-spin" /> Confirming...
           </div>
         )}
         {isApproveConfirmed && (
-          <div className="flex flex-row gap-2 items-center text-green-500 text-sm">
-            <CircleCheck className="w-4 h-4" /> Approved!
+          <div className="flex flex-row gap-2 items-center text-sm">
+            <CircleCheck className="w-4 h-4" /> Approved
           </div>
         )}
         {approveError && (
-          <div className="flex flex-row gap-2 items-center text-red-500 text-sm">
-            <X className="w-4 h-4" /> {(approveError as BaseError).shortMessage || approveError.message}
+          <div className="flex flex-row gap-2 items-center text-destructive text-sm">
+            <X className="w-4 h-4" />{" "}
+            {(approveError as BaseError).shortMessage || approveError.message}
           </div>
         )}
       </div>
 
-      {/* Step 2: Bridge */}
       <div className="flex flex-col gap-2 p-4 border rounded-lg">
         <div className="flex items-center gap-2 font-medium">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm">2</span>
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-foreground text-background text-sm">
+            2
+          </span>
           Bridge Transaction
         </div>
-        {bridgeHash ? (
+        {bridgeHash && (
           <div className="flex flex-row gap-2 items-center text-sm">
             <Hash className="w-4 h-4" />
-            <a 
-              className="flex flex-row gap-2 items-center underline underline-offset-4" 
-              href={getExplorerUrl(bridgeHash, selectedPair.source.id)} 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <a
+              className="flex flex-row gap-2 items-center underline underline-offset-4"
+              href={getExplorerUrl(bridgeHash, selectedPair.source.id)}
+              target="_blank"
             >
               {truncateHash(bridgeHash)}
               <ExternalLink className="w-4 h-4" />
             </a>
             <CopyButton copyText={bridgeHash} />
           </div>
-        ) : null}
-        {!isApproveConfirmed && !bridgeHash && (
+        )}
+        {!approveHash && !bridgeHash && !isBridgePending && (
           <div className="flex flex-row gap-2 items-center text-muted-foreground text-sm">
-            <Ban className="w-4 h-4" /> Waiting for approval...
+            Waiting for approval...
           </div>
         )}
-        {isApproveConfirmed && !bridgeHash && !isBridgePending && (
-          <Button onClick={executeBridge} className="w-full mt-2">
-            Execute Bridge
-          </Button>
-        )}
         {isBridgePending && (
-          <div className="flex flex-row gap-2 items-center text-yellow-500 text-sm">
-            <LoaderCircle className="w-4 h-4 animate-spin" /> Confirm in wallet...
+          <div className="flex flex-row gap-2 items-center text-muted-foreground text-sm">
+            <LoaderCircle className="w-4 h-4 animate-spin" /> Confirm in
+            wallet...
           </div>
         )}
         {isBridgeConfirming && (
-          <div className="flex flex-row gap-2 items-center text-yellow-500 text-sm">
-            <LoaderCircle className="w-4 h-4 animate-spin" /> Waiting for confirmation...
+          <div className="flex flex-row gap-2 items-center text-muted-foreground text-sm">
+            <LoaderCircle className="w-4 h-4 animate-spin" /> Confirming...
           </div>
         )}
         {isBridgeConfirmed && (
-          <div className="flex flex-row gap-2 items-center text-green-500 text-sm">
-            <CircleCheck className="w-4 h-4" /> Bridge transaction submitted!
+          <div className="flex flex-row gap-2 items-center text-sm">
+            <CircleCheck className="w-4 h-4" /> Submitted
           </div>
         )}
         {bridgeError && (
-          <div className="flex flex-row gap-2 items-center text-red-500 text-sm">
-            <X className="w-4 h-4" /> {(bridgeError as BaseError).shortMessage || bridgeError.message}
+          <div className="flex flex-row gap-2 items-center text-destructive text-sm">
+            <X className="w-4 h-4" />{" "}
+            {(bridgeError as BaseError).shortMessage || bridgeError.message}
           </div>
         )}
       </div>
 
-      {/* Final Status */}
       {isBridgeConfirmed && (
-        <div className="flex flex-col gap-2 p-4 border rounded-lg bg-green-500/10 border-green-500">
-          <div className="flex items-center gap-2 text-green-500 font-medium">
+        <div className="flex flex-col gap-2 p-4 border rounded-lg">
+          <div className="flex items-center gap-2 font-medium">
             <CircleCheck className="w-5 h-5" />
-            Bridge Initiated Successfully!
+            Bridge Initiated
           </div>
           <p className="text-sm text-muted-foreground">
-            Your tokens are being bridged from {selectedPair.source.name} to {selectedPair.destination.name}. 
-            This process may take several minutes to complete.
+            Your USDC is being bridged to {selectedPair.destination.name}. This
+            typically takes 10-30 minutes.
           </p>
+          <a
+            href="https://explorer.hyperbridge.network"
+            target="_blank"
+            className="text-sm underline underline-offset-4 flex items-center gap-1"
+          >
+            Track on Hyperbridge Explorer <ExternalLink className="w-3 h-3" />
+          </a>
         </div>
       )}
     </div>
   );
 
+  const isChainSupported = isBridgeSupported(selectedPair.source.id);
+
   return (
-    <div className="flex flex-col gap-6 w-[320px] md:w-[450px]">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-2xl font-bold">Token Bridge</h2>
+    <div className="flex flex-col gap-6 w-full max-w-md">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-xl font-semibold">Bridge USDC</h2>
         <p className="text-sm text-muted-foreground">
-          Bridge tokens across chains using Hyperbridge
+          Transfer USDC across chains via Hyperbridge
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 p-4 border rounded-lg">
-        {/* <FormLabel>Network Route</FormLabel> */}
+      <div className="flex flex-col gap-3 p-4 border rounded-lg">
         <Select
           value={selectedPairIndex.toString()}
-          onValueChange={(value: any) => setSelectedPairIndex(parseInt(value))}
+          onValueChange={(value) => setSelectedPairIndex(parseInt(value))}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Select network pair" />
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select route" />
           </SelectTrigger>
           <SelectContent>
             {bridgeNetworkPairs.map((pair, index) => (
-              <SelectItem key={index} value={index.toString()}>
+              <SelectItem
+                key={index}
+                value={index.toString()}
+                disabled={!isBridgeSupported(pair.source.id)}
+              >
                 <div className="flex items-center gap-2">
                   <span>{pair.source.name}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -558,97 +516,100 @@ export default function TokenBridge() {
           </SelectContent>
         </Select>
 
-        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">From</span>
-            <span className="font-medium">{selectedPair.source.name}</span>
+            <span className="font-medium text-sm">
+              {selectedPair.source.name}
+            </span>
           </div>
-          <ArrowRight className="w-5 h-5 text-muted-foreground" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground" />
           <div className="flex flex-col text-right">
             <span className="text-xs text-muted-foreground">To</span>
-            <span className="font-medium">{selectedPair.destination.name}</span>
+            <span className="font-medium text-sm">
+              {selectedPair.destination.name}
+            </span>
           </div>
         </div>
       </div>
 
-      {!activeAddress ? (
-        <div className="flex flex-col items-center gap-4 p-6 border rounded-lg border-dashed">
-          <Wallet className="w-12 h-12 text-muted-foreground" />
-          <p className="text-center text-muted-foreground">
-            Please connect your wallet to use the bridge
+      {!isChainSupported ? (
+        <div className="flex flex-col items-center gap-3 p-6 border rounded-lg border-dashed">
+          <Info className="w-10 h-10 text-muted-foreground" />
+          <p className="text-center text-sm text-muted-foreground">
+            This route is not yet available. Please select another route.
+          </p>
+        </div>
+      ) : !activeAddress ? (
+        <div className="flex flex-col items-center gap-3 p-6 border rounded-lg border-dashed">
+          <Wallet className="w-10 h-10 text-muted-foreground" />
+          <p className="text-center text-sm text-muted-foreground">
+            Connect your wallet to bridge tokens
           </p>
         </div>
       ) : !isOnCorrectChain && !sigpassAddress ? (
-        <div className="flex flex-col items-center gap-4 p-6 border rounded-lg border-dashed">
-          <RefreshCw className="w-12 h-12 text-muted-foreground" />
-          <p className="text-center text-muted-foreground">
-            Please switch to {selectedPair.source.name} to continue
+        <div className="flex flex-col items-center gap-3 p-6 border rounded-lg border-dashed">
+          <RefreshCw className="w-10 h-10 text-muted-foreground" />
+          <p className="text-center text-sm text-muted-foreground">
+            Switch to {selectedPair.source.name} to continue
           </p>
-          <Button onClick={handleSwitchChain} disabled={isSwitchingChain}>
+          <Button
+            onClick={handleSwitchChain}
+            disabled={isSwitchingChain}
+            size="sm"
+          >
             {isSwitchingChain ? (
               <>
                 <LoaderCircle className="w-4 h-4 animate-spin mr-2" />
                 Switching...
               </>
             ) : (
-              `Switch to ${selectedPair.source.name}`
+              `Switch Network`
             )}
           </Button>
         </div>
       ) : (
         <>
-          <div className="flex flex-col gap-2 p-4 border rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Token</span>
-              {isLoadingTokenData ? (
-                <Skeleton className="h-5 w-20" />
-              ) : (
-                <span className="font-medium">{tokenSymbol || "Unknown"}</span>
-              )}
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-muted-foreground" />
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground">Available</span>
+                {isLoadingTokenData ? (
+                  <Skeleton className="h-5 w-24" />
+                ) : (
+                  <span className="font-medium">
+                    {tokenBalance && tokenDecimals
+                      ? `${formatUnits(tokenBalance, tokenDecimals)} ${
+                          tokenSymbol || "USDC"
+                        }`
+                      : "0 USDC"}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Balance</span>
-              {isLoadingTokenData ? (
-                <Skeleton className="h-5 w-24" />
-              ) : (
-                <span className="font-medium">
-                  {tokenBalance && tokenDecimals 
-                    ? `${formatUnits(tokenBalance, tokenDecimals)} ${tokenSymbol || ""}`
-                    : "0"
-                  }
-                </span>
-              )}
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchTokenData()}
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
           </div>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="tokenAddress" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Token Address (Optional)
-                </label>
-                <Input
-                  id="tokenAddress"
-                  placeholder="0x... (leave empty for default token)"
-                  value={tokenAddress}
-                  onChange={(e) => setTokenAddress(e.target.value as Address | "")}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Enter a custom token address or use the default bridge token
-                </p>
-              </div>
-
               <FormField
                 control={form.control}
                 name="recipient"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Recipient Address</FormLabel>
+                    <FormLabel>Recipient</FormLabel>
                     <FormControl>
-                      <Input placeholder="0xA0Cf…251e" {...field} />
+                      <Input placeholder="0x..." {...field} />
                     </FormControl>
                     <FormDescription>
-                      The address to receive tokens on {selectedPair.destination.name}
+                      Address on {selectedPair.destination.name}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -686,65 +647,91 @@ export default function TokenBridge() {
                             variant="ghost"
                             size="sm"
                             className="absolute right-2 top-1/2 -translate-y-1/2 h-6 text-xs"
-                            onClick={() => form.setValue('amount', formatUnits(tokenBalance, tokenDecimals))}
+                            onClick={() =>
+                              form.setValue(
+                                "amount",
+                                formatUnits(tokenBalance, tokenDecimals)
+                              )
+                            }
                           >
                             MAX
                           </Button>
                         )}
                       </div>
                     </FormControl>
-                    <FormDescription>
-                      Amount of {tokenSymbol || "tokens"} to bridge
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {isApprovePending || isBridgePending || isApproveConfirming || isBridgeConfirming ? (
-                <Button type="submit" disabled className="w-full">
-                  <LoaderCircle className="w-4 h-4 animate-spin mr-2" /> 
-                  {isApprovePending || isApproveConfirming ? "Approving..." : "Bridging..."}
-                </Button>
-              ) : isApproveConfirmed && !needsApproval ? (
-                <Button type="submit" className="w-full">
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                  Bridge Tokens
-                </Button>
-              ) : (
-                <Button type="submit" className="w-full">
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                  {needsApproval ? "Approve Tokens" : "Bridge Tokens"}
-                </Button>
-              )}
+              <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <DollarSign className="w-3 h-3" /> Relayer Fee
+                  </span>
+                  <span>1 USDC</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> Est. Time
+                  </span>
+                  <span>10-30 min</span>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={
+                  isApprovePending ||
+                  isBridgePending ||
+                  isApproveConfirming ||
+                  isBridgeConfirming
+                }
+              >
+                {isApprovePending || isApproveConfirming ? (
+                  <>
+                    <LoaderCircle className="w-4 h-4 animate-spin mr-2" />
+                    Approving...
+                  </>
+                ) : isBridgePending || isBridgeConfirming ? (
+                  <>
+                    <LoaderCircle className="w-4 h-4 animate-spin mr-2" />
+                    Bridging...
+                  </>
+                ) : needsApproval ? (
+                  "Approve & Bridge"
+                ) : (
+                  "Bridge USDC"
+                )}
+              </Button>
             </form>
           </Form>
         </>
       )}
 
-      {/* Transaction Status Dialog/Drawer */}
       {isDesktop ? (
         <Dialog open={open} onOpenChange={setOpen}>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full"
             onClick={() => setOpen(true)}
             disabled={!approveHash && !bridgeHash}
           >
-            Transaction Status <ChevronDown className="w-4 h-4 ml-2" />
+            View Status <ChevronDown className="w-4 h-4 ml-2" />
           </Button>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Bridge Transaction Status</DialogTitle>
+              <DialogTitle>Transaction Status</DialogTitle>
               <DialogDescription>
-                Follow the progress of your bridge transaction
+                Track your bridge transaction progress
               </DialogDescription>
             </DialogHeader>
             <TransactionStatusContent />
             <DialogFooter className="flex gap-2">
               {isBridgeConfirmed && (
                 <Button onClick={resetTransaction} className="w-full">
-                  New Bridge
+                  New Transfer
                 </Button>
               )}
               <DialogClose asChild>
@@ -755,19 +742,19 @@ export default function TokenBridge() {
         </Dialog>
       ) : (
         <Drawer open={open} onOpenChange={setOpen}>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full"
             onClick={() => setOpen(true)}
             disabled={!approveHash && !bridgeHash}
           >
-            Transaction Status <ChevronDown className="w-4 h-4 ml-2" />
+            View Status <ChevronDown className="w-4 h-4 ml-2" />
           </Button>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Bridge Transaction Status</DrawerTitle>
+              <DrawerTitle>Transaction Status</DrawerTitle>
               <DrawerDescription>
-                Follow the progress of your bridge transaction
+                Track your bridge transaction progress
               </DrawerDescription>
             </DrawerHeader>
             <div className="p-4">
@@ -776,7 +763,7 @@ export default function TokenBridge() {
             <DrawerFooter className="flex gap-2">
               {isBridgeConfirmed && (
                 <Button onClick={resetTransaction} className="w-full">
-                  New Bridge
+                  New Transfer
                 </Button>
               )}
               <DrawerClose asChild>

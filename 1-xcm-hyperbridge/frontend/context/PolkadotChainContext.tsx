@@ -1,12 +1,13 @@
 import { createContext, useContext } from "react";
-import { PolkadotClient } from "polkadot-api";
-import { PaseoAssetHubChainApi } from "@/api";
+
+// Simplified context for EVM-only bridging
+// Polkadot API integration temporarily disabled
 
 export const polkadotChainCtx = createContext<{
-    client: PolkadotClient,
-    api: PaseoAssetHubChainApi
+  client: unknown;
+  api: unknown;
 } | null>(null);
 
-export const usePolkadotChain = () => useContext(polkadotChainCtx)!;
+export const usePolkadotChain = () => useContext(polkadotChainCtx);
 
 export const PolkadotChainProvider = polkadotChainCtx.Provider;

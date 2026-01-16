@@ -1,27 +1,21 @@
-'use client';
+"use client";
 
-import * as React from 'react';
+import * as React from "react";
 import {
   RainbowKitProvider,
   getDefaultWallets,
   getDefaultConfig,
-} from '@rainbow-me/rainbowkit';
+} from "@rainbow-me/rainbowkit";
 import {
   phantomWallet,
   trustWallet,
   ledgerWallet,
-} from '@rainbow-me/rainbowkit/wallets';
-import {
-  sepolia,
-  bscTestnet,
-  optimismSepolia,
-} from 'wagmi/chains';
-import { defineChain, type Chain } from 'viem';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WagmiProvider, http, createConfig } from 'wagmi';
-import { Provider as JotaiProvider } from 'jotai';
-import { PolkadotChainProvider } from '@/context/PolkadotChainContext';
-import { paraChain, paseoAssetHubChainApi } from '@/api';
+} from "@rainbow-me/rainbowkit/wallets";
+import { sepolia, bscTestnet, optimismSepolia } from "wagmi/chains";
+import { defineChain, type Chain } from "viem";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiProvider, http, createConfig } from "wagmi";
+import { Provider as JotaiProvider } from "jotai";
 
 // Paseo Testnet chain definition (Polkadot testnet)
 export const paseoTestnet = defineChain({
@@ -29,20 +23,23 @@ export const paseoTestnet = defineChain({
   name: "Paseo Testnet",
   nativeCurrency: {
     decimals: 18,
-    name: 'Paseo',
-    symbol: 'PAS',
+    name: "Paseo",
+    symbol: "PAS",
   },
   rpcUrls: {
     default: {
-      http: ['https://testnet-passet-hub-eth-rpc.polkadot.io'],
-      webSocket: ['wss://passet-hub-paseo.ibp.network'],
+      http: ["https://testnet-passet-hub-eth-rpc.polkadot.io"],
+      webSocket: ["wss://passet-hub-paseo.ibp.network"],
     },
   },
   blockExplorers: {
-    default: { name: 'Blockscout', url: 'https://blockscout-passet-hub.parity-testnet.parity.io/' },
+    default: {
+      name: "Blockscout",
+      url: "https://blockscout-passet-hub.parity-testnet.parity.io/",
+    },
   },
   testnet: true,
-})
+});
 
 // Bridge supported chains configuration
 export const bridgeChains = {
@@ -61,17 +58,20 @@ export type BridgeNetworkPair = {
 
 export const bridgeNetworkPairs: BridgeNetworkPair[] = [
   { source: paseoTestnet, destination: sepolia, name: "Paseo → ETH Sepolia" },
-  { source: bscTestnet, destination: sepolia, name: "BSC Testnet → ETH Sepolia" },
-  { source: optimismSepolia, destination: sepolia, name: "Optimism Sepolia → ETH Sepolia" },
+  {
+    source: bscTestnet,
+    destination: sepolia,
+    name: "BSC Testnet → ETH Sepolia",
+  },
+  {
+    source: optimismSepolia,
+    destination: sepolia,
+    name: "Optimism Sepolia → ETH Sepolia",
+  },
 ];
 
 export const localConfig = createConfig({
-  chains: [
-    sepolia,
-    bscTestnet,
-    optimismSepolia,
-    paseoTestnet,
-  ],
+  chains: [sepolia, bscTestnet, optimismSepolia, paseoTestnet],
   transports: {
     [sepolia.id]: http(),
     [bscTestnet.id]: http(),
@@ -82,31 +82,25 @@ export const localConfig = createConfig({
 });
 
 const { wallets } = getDefaultWallets();
-// initialize and destructure wallets object
 
 const config = getDefaultConfig({
-  appName: "DOTUI", // Name your app
-  projectId: "ddf8cf3ee0013535c3760d4c79c9c8b9", // Enter your WalletConnect Project ID here
+  appName: "Hyperbridge",
+  projectId: "ddf8cf3ee0013535c3760d4c79c9c8b9",
   wallets: [
     ...wallets,
     {
-      groupName: 'Other',
+      groupName: "Other",
       wallets: [phantomWallet, trustWallet, ledgerWallet],
     },
   ],
-  chains: [
-    sepolia,
-    bscTestnet,
-    optimismSepolia,
-    paseoTestnet,
-  ],
+  chains: [sepolia, bscTestnet, optimismSepolia, paseoTestnet],
   transports: {
     [sepolia.id]: http(),
     [bscTestnet.id]: http(),
     [optimismSepolia.id]: http(),
     [paseoTestnet.id]: http(),
   },
-  ssr: true, // Because it is Nextjs's App router, you need to declare ssr as true
+  ssr: true,
 });
 
 const queryClient = new QueryClient();
@@ -115,13 +109,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <JotaiProvider>
       <WagmiProvider config={config}>
-        <PolkadotChainProvider value={{ client: paraChain, api: paseoAssetHubChainApi}}>
-          <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider>
-            {children}
-          </RainbowKitProvider>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider>{children}</RainbowKitProvider>
         </QueryClientProvider>
-        </PolkadotChainProvider>
       </WagmiProvider>
     </JotaiProvider>
   );
