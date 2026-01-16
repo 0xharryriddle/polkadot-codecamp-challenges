@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
@@ -28,7 +28,7 @@ contract ScaffoldERC20 is ERC20, Ownable {
      * @param to Address to receive the minted tokens
      * @param amount Amount of tokens to mint (in wei, considering decimals)
      */
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) public {
         _mint(to, amount);
         emit TokensMinted(to, amount);
     }

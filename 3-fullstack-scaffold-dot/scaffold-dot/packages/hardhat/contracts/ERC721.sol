@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { ERC721URIStorage } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract ScaffoldERC721 is ERC721, ERC721URIStorage, Ownable {
     // State variables
     uint256 private _nextTokenId;
-    
+
     // Events
     event NFTMinted(address indexed to, uint256 indexed tokenId, string tokenURI);
     event NFTBurned(uint256 indexed tokenId);
@@ -36,7 +36,7 @@ contract ScaffoldERC721 is ERC721, ERC721URIStorage, Ownable {
         uint256 tokenId = _nextTokenId++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
-        
+
         emit NFTMinted(to, tokenId, uri);
         return tokenId;
     }
@@ -51,7 +51,7 @@ contract ScaffoldERC721 is ERC721, ERC721URIStorage, Ownable {
         uint256 tokenId = _nextTokenId++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
-        
+
         emit NFTMinted(to, tokenId, uri);
         return tokenId;
     }

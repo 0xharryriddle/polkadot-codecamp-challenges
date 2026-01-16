@@ -108,10 +108,12 @@ export async function deployAllContracts() {
       const availableArtifacts = getAllContractArtifactsFromSolFile(solFileName);
       console.log(`   Found artifacts in ${solFileName}: ${availableArtifacts.join(', ') || 'none'}`);
       
-      // Verify the contract we're deploying exists in artifacts
-      if (!availableArtifacts.includes(contractName)) {
-        console.warn(`   ⚠️  Warning: Contract "${contractName}" not found in artifacts!`);
-        console.warn(`   Available artifacts: ${availableArtifacts.join(', ')}`);
+      // Determine the actual contract name from artifacts
+      let actualContractName = contractName;
+      if (!availableArtifacts.includes(contractName) && availableArtifacts.length > 0) {
+        // Use the first available artifact if the module name doesn't match
+        actualContractName = availableArtifacts[0];
+        console.log(`   ℹ️  Using artifact name: ${actualContractName}`);
       }
       
       // Dynamically import the ignition module
@@ -125,12 +127,9 @@ export async function deployAllContracts() {
       const contractInstance = deploymentResult[contractKey];
       const contractAddress = await contractInstance.getAddress();
       
-      // Determine the actual contract name (might differ from module name)
-      const actualContractName = extractContractNameFromModule(contractName, deploymentResult);
-      
       console.log(`✅ ${actualContractName} deployed to: ${contractAddress}`);
       
-      // Store deployment info
+      // Store deployment info using the actual artifact name
       deployedContracts[actualContractName] = contractAddress;
       deploymentResults[actualContractName] = contractInstance;
       
