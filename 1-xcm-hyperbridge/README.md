@@ -153,9 +153,9 @@ Your submission should include:
 
 4. **Frontend**
    - [x] Basic UI for bridging tokens
-   - [ ] Screenshots of your UI in action
-   - [ ] Accessible Recording Link 
-   - [ ] Minimum supported network pairs (pick at least one)
+   - [x] Screenshots of your UI in action
+   - [x] Accessible Recording Link 
+   - [x] Minimum supported network pairs (pick at least one)
 
 ## 🔗 Resources
 
