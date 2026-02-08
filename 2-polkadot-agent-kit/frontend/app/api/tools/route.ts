@@ -1,22 +1,19 @@
 /**
- * API Route: Execute Staking Tools
+ * API Route: Execute Polkadot Tools
  *
- * This endpoint allows direct execution of staking tools.
+ * This endpoint allows direct execution of Polkadot SDK tools.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 
 // Lazy initialization of tools to avoid build-time errors
-let tools: Record<
-  string,
-  { invoke: (args: Record<string, unknown>) => Promise<unknown> }
-> | null = null;
+let tools: any[] | null = null;
 
 async function getTools() {
   if (!tools) {
     // Dynamic import to avoid build-time evaluation
-    const { getStakingToolsMap } = await import("@/lib/agent");
-    tools = getStakingToolsMap();
+    const { getAllTools } = await import("@/lib/agent");
+    tools = getAllTools();
   }
   return tools;
 }
@@ -28,29 +25,30 @@ interface ExecuteRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const toolsMap = await getTools();
+    const toolsList = await getTools();
     const body = (await request.json()) as ExecuteRequest;
     const { tool, arguments: args } = body;
 
     if (!tool || !args) {
       return NextResponse.json(
         { error: "Tool name and arguments are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (!(tool in toolsMap)) {
+    const selectedTool = toolsList.find((t) => t.name === tool);
+
+    if (!selectedTool) {
       return NextResponse.json(
         {
-          error: `Unknown tool: ${tool}. Available tools: ${Object.keys(
-            toolsMap
-          ).join(", ")}`,
+          error: `Unknown tool: ${tool}. Available tools: ${toolsList
+            .map((t) => t.name)
+            .join(", ")}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const selectedTool = toolsMap[tool];
     const result = await selectedTool.invoke(args);
 
     return NextResponse.json({
@@ -65,30 +63,22 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-// Tool descriptions for documentation
-const toolDescriptions: Record<string, string> = {
-  join_pool: "Join a nomination pool with specified amount",
-  bond_extra: "Bond additional tokens to an existing pool stake",
-  unbond: "Start unbonding tokens from a nomination pool",
-  withdraw_unbonded: "Withdraw tokens after the unbonding period",
-  claim_rewards: "Claim pending staking rewards from a pool",
-  get_pool_info: "Get detailed information about a nomination pool",
-};
-
 export async function GET() {
-  // Return available tools and their descriptions
-  const toolsMap = await getTools();
-  const toolInfo = Object.keys(toolsMap).map((name) => ({
-    name,
-    description: toolDescriptions[name] || "No description available",
+  // Return available tools and their descriptions from SDK
+  const toolsList = await getTools();
+  const toolInfo = toolsList.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
   }));
 
   return NextResponse.json({
     tools: toolInfo,
+    count: toolsList.length,
+    sdk: "@polkadot-agent-kit/sdk v2.1.5",
   });
 }

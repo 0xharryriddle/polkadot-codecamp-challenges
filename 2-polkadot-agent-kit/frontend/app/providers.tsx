@@ -18,6 +18,18 @@ import {
 } from "@luno-kit/react/connectors";
 import { LunoKitProvider } from "@luno-kit/ui";
 
+// Hydration chain configuration
+const hydration = {
+  id: "hydration",
+  name: "Hydration",
+  network: "hydration",
+  nativeCurrency: { name: "HDX", symbol: "HDX", decimals: 12 },
+  rpcUrls: {
+    default: { http: [], webSocket: ["wss://rpc.hydradx.cloud"] },
+    public: { http: [], webSocket: ["wss://rpc.hydradx.cloud"] },
+  },
+} as const;
+
 const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || "";
 
 const connectors = [
@@ -34,8 +46,15 @@ const connectors = [
 ];
 
 const lunoConfig = createConfig({
-  appName: "Polkadot Staking Agent",
-  chains: [polkadot, kusama, westend, paseoAssetHub, polkadotAssetHub],
+  appName: "Polkadot Agent - Staking & Swaps",
+  chains: [
+    polkadot,
+    kusama,
+    westend,
+    paseoAssetHub,
+    polkadotAssetHub,
+    hydration as any,
+  ],
   connectors,
   autoConnect: true,
 });

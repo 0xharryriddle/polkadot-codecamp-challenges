@@ -47,6 +47,12 @@ const stakingTools: Tool[] = [
     description: "Get detailed information about a pool",
     icon: "📊",
   },
+  {
+    id: "swap_tokens",
+    name: "Swap Tokens",
+    description: "XCM cross-chain token swap on Hydration",
+    icon: "🔄",
+  },
 ];
 
 export function ToolsPanel() {
@@ -65,7 +71,7 @@ export function ToolsPanel() {
           <div className="text-left">
             <h3 className="font-semibold text-white">Available Tools</h3>
             <p className="text-xs text-gray-400">
-              {stakingTools.length} staking operations
+              {stakingTools.length} operations (staking + swaps)
             </p>
           </div>
         </div>

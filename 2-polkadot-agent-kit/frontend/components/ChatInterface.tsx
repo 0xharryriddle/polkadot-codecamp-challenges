@@ -15,17 +15,21 @@ export function ChatInterface() {
     {
       id: "1",
       role: "assistant",
-      content: `👋 Hello! I'm your **Polkadot Staking Agent**.
+      content: `👋 Hello! I'm your **Polkadot Agent**.
 
-I can help you manage nomination pool staking on Polkadot, Kusama, and Westend.
+I can help you with:
 
-**Available commands:**
-- Join a nomination pool
-- Bond more tokens
-- Unbond tokens
-- Withdraw unbonded funds
+**Nomination Pool Staking:**
+- Join pools, bond tokens, unbond, withdraw
 - Claim staking rewards
 - Check pool information
+
+**XCM Cross-Chain Swaps:**
+- Swap tokens on Hydration (DOT, USDT, USDC, DAI, HDX)
+- Multi-chain token exchanges
+
+**Supported Chains:**
+Polkadot • Kusama • Westend • Hydration
 
 What would you like to do?`,
       timestamp: new Date(),
@@ -110,28 +114,28 @@ What would you like to do?`,
         // Bold text
         line = line.replace(
           /\*\*(.*?)\*\*/g,
-          "<strong class='text-pink-400'>$1</strong>"
+          "<strong class='text-pink-400'>$1</strong>",
         );
         // Inline code
         line = line.replace(
           /`([^`]+)`/g,
-          '<code class="bg-gray-700/70 px-2 py-0.5 rounded text-sm text-green-400 font-mono">$1</code>'
+          '<code class="bg-gray-700/70 px-2 py-0.5 rounded text-sm text-green-400 font-mono">$1</code>',
         );
         // Headers
         if (line.startsWith("# ")) {
           return `<h1 class="text-xl font-bold mt-2 text-white">${line.slice(
-            2
+            2,
           )}</h1>`;
         }
         if (line.startsWith("## ")) {
           return `<h2 class="text-lg font-semibold mt-2 text-white">${line.slice(
-            3
+            3,
           )}</h2>`;
         }
         // List items with better styling
         if (line.startsWith("- ")) {
           return `<div class="ml-4 flex items-start gap-2"><span class="text-pink-400 mt-0.5">•</span><span>${line.slice(
-            2
+            2,
           )}</span></div>`;
         }
         if (line.match(/^\d+\. /)) {
@@ -244,7 +248,7 @@ What would you like to do?`,
               >
                 {suggestion}
               </button>
-            )
+            ),
           )}
         </div>
       </div>

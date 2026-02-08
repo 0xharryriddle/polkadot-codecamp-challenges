@@ -1,7 +1,12 @@
-'use client';
+"use client";
 
-import { ConnectButton } from '@luno-kit/ui';
-import { ChatInterface, WalletStatus, ChainInfo, ToolsPanel } from '@/components';
+import { ConnectButton } from "@luno-kit/ui";
+import {
+  ChatInterface,
+  WalletStatus,
+  ChainInfo,
+  ToolsPanel,
+} from "@/components";
 
 export default function Home() {
   return (
@@ -14,8 +19,10 @@ export default function Home() {
               <span className="text-xl">🤖</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Polkadot Staking Agent</h1>
-              <p className="text-xs text-gray-400">AI-Powered Nomination Pool Manager</p>
+              <h1 className="text-xl font-bold text-white">Polkadot Agent</h1>
+              <p className="text-xs text-gray-400">
+                AI-Powered Staking & XCM Swaps
+              </p>
             </div>
           </div>
           <ConnectButton />
@@ -45,11 +52,15 @@ export default function Home() {
                   <span className="text-white font-medium">500+</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">Min. Join Amount</span>
+                  <span className="text-gray-400 text-sm">
+                    Min. Join Amount
+                  </span>
                   <span className="text-white font-medium">1 DOT</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">Unbonding Period</span>
+                  <span className="text-gray-400 text-sm">
+                    Unbonding Period
+                  </span>
                   <span className="text-white font-medium">28 days</span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -81,8 +92,14 @@ export default function Home() {
                   <p>&quot;Unbond 3 DOT from my pool&quot;</p>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-300 mb-1">Get Pool Info</p>
+                  <p className="font-medium text-gray-300 mb-1">
+                    Get Pool Info
+                  </p>
                   <p>&quot;Get information about pool #1&quot;</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-300 mb-1">Swap Tokens</p>
+                  <p>&quot;Swap 10 DOT for USDT on Hydration&quot;</p>
                 </div>
               </div>
             </div>
@@ -93,8 +110,13 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-800 mt-12 py-6">
         <div className="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
-          <p>Built with @polkadot-agent-kit • LunoKit • Next.js</p>
-          <p className="mt-1">Polkadot Codecamp Challenge 2</p>
+          <p>
+            Built with @polkadot-agent-kit • LangChain • Ollama • LunoKit •
+            Next.js
+          </p>
+          <p className="mt-1">
+            Polkadot Codecamp Challenge 2 • Staking + XCM Swaps
+          </p>
         </div>
       </footer>
     </div>
