@@ -4,12 +4,11 @@
  * This is the core agent implementation following the example project pattern:
  * 1. Create PolkadotAgentKit + register custom tools via addCustomTools
  * 2. Get LangChain tools via getLangChainTools
- * 3. Create ChatOllama and bind tools via llm.bindTools(tools)
+ * 3. Create chat model using ChatModelFactory and bind tools via llm.bindTools(tools)
  * 4. Iterative agent loop: SystemMessage + HumanMessage → invoke LLM →
  *    check tool_calls → execute tools → ToolMessage → repeat until done
  */
 
-import { ChatOllama } from "@langchain/ollama";
 import {
   HumanMessage,
   SystemMessage,
@@ -18,6 +17,7 @@ import {
 } from "@langchain/core/messages";
 import { PolkadotAgentKit, getLangChainTools } from "@polkadot-agent-kit/sdk";
 
+import { ChatModelFactory } from "@/lib/models";
 import { createStakingSystemPrompt } from "./prompts/createStakingSystemPrompt";
 import { createGetPoolInfoAction } from "./actions/listNominationPools.action";
 import { createInitializeChainApiAction } from "./actions/ensureChainApi.action";
@@ -27,6 +27,8 @@ import type { AgentConfig, AgentResponse, ToolResult } from "./types";
 export class AgentWrapper {
   provider: string;
   model: string;
+  temperature: number;
+  verbose: boolean;
   private llmWithTools: any;
   private tools: any[];
   private systemPrompt: string = "";
@@ -39,6 +41,8 @@ export class AgentWrapper {
   ) {
     this.provider = config.provider;
     this.model = config.model;
+    this.temperature = config.temperature ?? 1.0;
+    this.verbose = config.verbose ?? false;
     this.connectedChain = config.connectedChain;
     this.connectedChainDisplayName = config.connectedChainDisplayName;
     this.tools = [];
@@ -73,11 +77,12 @@ export class AgentWrapper {
       this.tools.map((t: any) => t.name).join(", "),
     );
 
-    // Create Ollama LLM
-    const llm = new ChatOllama({
-      model: this.model,
-      baseUrl:
-        process.env.NEXT_PUBLIC_OLLAMA_BASE_URL || "http://localhost:11434",
+    // Create chat model using ChatModelFactory
+    const llm = ChatModelFactory.create({
+      provider: this.provider as "ollama" | "openai",
+      modelName: this.model,
+      temperature: this.temperature,
+      verbose: this.verbose,
     });
 
     // Bind tools to the LLM — enables function calling
@@ -106,6 +111,11 @@ export class AgentWrapper {
     let currentMessages: BaseMessage[] = messages;
     let iterations = 0;
     const maxIterations = 15;
+
+    // Track consecutive failures to prevent infinite loops
+    let consecutiveFailures = 0;
+    const maxConsecutiveFailures = 3;
+    let lastFailedTool: string | null = null;
 
     // Agent loop: invoke LLM, check for tool calls, execute tools, repeat
     while (iterations < maxIterations) {
@@ -235,11 +245,57 @@ export class AgentWrapper {
           const toolResult = await tool.invoke(parsedArgs);
           console.log(`Tool result:`, toolResult);
 
+          // Check if the tool result indicates an error
+          const isToolError = this.isToolResultError(toolResult);
+
+          if (isToolError) {
+            // Track consecutive failures
+            if (lastFailedTool === toolCall.name) {
+              consecutiveFailures++;
+            } else {
+              consecutiveFailures = 1;
+              lastFailedTool = toolCall.name;
+            }
+
+            console.warn(
+              `⚠️  Tool '${toolCall.name}' failed (${consecutiveFailures}/${maxConsecutiveFailures})`,
+            );
+
+            // Stop if too many consecutive failures
+            if (consecutiveFailures >= maxConsecutiveFailures) {
+              const errorSummary = this.extractErrorMessage(toolResult);
+              console.error(
+                `❌ Stopping: ${maxConsecutiveFailures} consecutive failures of '${toolCall.name}'`,
+              );
+
+              return {
+                input: query,
+                output: `I encountered repeated errors while trying to execute the '${toolCall.name}' operation:\n\n${errorSummary}\n\nPlease check:\n1. Your configuration and account credentials\n2. The chain/network you're trying to connect to\n3. Whether the operation is supported on the selected chain\n\nIf you need help, try asking me about available tools or network information.`,
+                intermediateSteps,
+                toolResults: [
+                  ...toolResults,
+                  {
+                    tool: toolCall.name,
+                    args: toolCall.args,
+                    result: toolResult,
+                    success: false,
+                  },
+                ],
+                provider: this.provider as any,
+                model: this.model,
+              };
+            }
+          } else {
+            // Reset failure counter on success
+            consecutiveFailures = 0;
+            lastFailedTool = null;
+          }
+
           toolResults.push({
             tool: toolCall.name,
             args: toolCall.args,
             result: toolResult,
-            success: true,
+            success: !isToolError,
           });
 
           // Use ToolMessage for tool results (LangChain standard)
@@ -258,6 +314,42 @@ export class AgentWrapper {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
           console.error(`Tool error:`, errorMessage);
+
+          // Track consecutive failures
+          if (lastFailedTool === toolCall.name) {
+            consecutiveFailures++;
+          } else {
+            consecutiveFailures = 1;
+            lastFailedTool = toolCall.name;
+          }
+
+          console.warn(
+            `⚠️  Tool '${toolCall.name}' threw error (${consecutiveFailures}/${maxConsecutiveFailures})`,
+          );
+
+          // Stop if too many consecutive failures
+          if (consecutiveFailures >= maxConsecutiveFailures) {
+            console.error(
+              `❌ Stopping: ${maxConsecutiveFailures} consecutive errors from '${toolCall.name}'`,
+            );
+
+            return {
+              input: query,
+              output: `I encountered repeated errors while trying to execute the '${toolCall.name}' operation:\n\n${errorMessage}\n\nPlease check:\n1. Your configuration and account credentials\n2. The chain/network you're trying to connect to\n3. Whether the operation is supported on the selected chain\n\nIf you need help, try asking me about available tools or network information.`,
+              intermediateSteps,
+              toolResults: [
+                ...toolResults,
+                {
+                  tool: toolCall.name,
+                  args: toolCall.args,
+                  error: errorMessage,
+                  success: false,
+                },
+              ],
+              provider: this.provider as any,
+              model: this.model,
+            };
+          }
 
           toolResults.push({
             tool: toolCall.name,
@@ -282,9 +374,50 @@ export class AgentWrapper {
     }
 
     // Max iterations reached
+    console.error(`❌ Maximum iterations (${maxIterations}) reached`);
+
+    // Create a helpful message based on the tool results
+    let output = `I couldn't complete the task after ${maxIterations} attempts.\n\n`;
+
+    if (toolResults.length > 0) {
+      const failedTools = toolResults.filter((r) => !r.success);
+      const successfulTools = toolResults.filter((r) => r.success);
+
+      if (failedTools.length > 0) {
+        output += `**Issues encountered:**\n`;
+        const uniqueFailures = new Map<string, string>();
+        failedTools.forEach((r) => {
+          const key = r.tool;
+          if (!uniqueFailures.has(key)) {
+            const errorMsg = r.error || this.extractErrorMessage(r.result);
+            uniqueFailures.set(key, errorMsg);
+          }
+        });
+
+        uniqueFailures.forEach((error, tool) => {
+          output += `- **${tool}**: ${error}\n`;
+        });
+      }
+
+      if (successfulTools.length > 0) {
+        output += `\n**Successful operations:**\n`;
+        successfulTools.forEach((r) => {
+          output += `- ${r.tool}\n`;
+        });
+      }
+    } else {
+      output +=
+        "The agent kept processing but didn't execute any tools successfully.";
+    }
+
+    output += `\n\nPlease try:\n`;
+    output += `1. Simplifying your request\n`;
+    output += `2. Checking your configuration\n`;
+    output += `3. Asking me about available tools and their requirements`;
+
     return {
       input: query,
-      output: "Maximum iterations reached without completing the task.",
+      output,
       intermediateSteps,
       toolResults,
       provider: this.provider as any,
@@ -441,6 +574,85 @@ export class AgentWrapper {
   private truncateAddress(addr: string): string {
     if (!addr || addr.length < 16) return addr;
     return `${addr.slice(0, 8)}...${addr.slice(-6)}`;
+  }
+
+  /**
+   * Check if a tool result indicates an error
+   */
+  private isToolResultError(result: any): boolean {
+    if (!result) return false;
+
+    // Check for explicit success flag
+    if (result.success === false) return true;
+
+    // Check for error property
+    if (result.error) return true;
+
+    // Check for content with error indication
+    if (typeof result === "object" && result.content) {
+      const content =
+        typeof result.content === "string"
+          ? result.content
+          : JSON.stringify(result.content);
+
+      return (
+        content.includes('"success":false') ||
+        content.includes('"error":{') ||
+        content.includes("Tx Hash Failed")
+      );
+    }
+
+    // Check if it's a string error message
+    if (typeof result === "string") {
+      return (
+        result.toLowerCase().includes("error") ||
+        result.toLowerCase().includes("failed")
+      );
+    }
+
+    return false;
+  }
+
+  /**
+   * Extract a readable error message from a tool result
+   */
+  private extractErrorMessage(result: any): string {
+    if (!result) return "Unknown error occurred";
+
+    // Try to extract error from various formats
+    if (result.error) {
+      if (typeof result.error === "string") return result.error;
+      if (result.error.message) return result.error.message;
+      return JSON.stringify(result.error);
+    }
+
+    // Try to parse content
+    if (result.content) {
+      try {
+        const content =
+          typeof result.content === "string"
+            ? JSON.parse(result.content)
+            : result.content;
+
+        if (content.error) {
+          if (typeof content.error === "string") return content.error;
+          if (content.error.message) return content.error.message;
+        }
+
+        if (content.data && typeof content.data === "string") {
+          return content.data;
+        }
+      } catch {
+        // If parsing fails, return the raw content
+        if (typeof result.content === "string") {
+          return result.content;
+        }
+      }
+    }
+
+    // Fallback to stringified result
+    if (typeof result === "string") return result;
+    return JSON.stringify(result);
   }
 
   isReady(): boolean {

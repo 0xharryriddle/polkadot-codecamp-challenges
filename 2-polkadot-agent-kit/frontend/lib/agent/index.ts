@@ -16,6 +16,7 @@ import { PolkadotAgentKit, getLangChainTools } from "@polkadot-agent-kit/sdk";
 import type { AgentConfig as SdkAgentConfig } from "@polkadot-agent-kit/common";
 import { AgentWrapper } from "./AgentWrapper";
 import type { AgentConfig } from "./types";
+import { env } from "@/lib/config/env";
 
 // Re-export types and AgentWrapper
 export { AgentWrapper } from "./AgentWrapper";
@@ -46,8 +47,8 @@ export function getPolkadotAgent(
   if (!agentInstance) {
     const privateKey =
       config?.privateKey ||
-      process.env.POLKADOT_PRIVATE_KEY ||
-      process.env.POLKADOT_MNEMONIC ||
+      env.polkadot.privateKey ||
+      env.polkadot.mnemonic ||
       DEFAULT_TEST_PRIVATE_KEY;
 
     const finalConfig: SdkAgentConfig = {
@@ -79,9 +80,10 @@ export async function getAgentWrapper(
   const agentKit = getPolkadotAgent();
 
   const agentConfig: AgentConfig = {
-    provider: config?.provider || "ollama",
-    model:
-      config?.model || process.env.NEXT_PUBLIC_OLLAMA_MODEL || "llama3.1:8b",
+    provider: config?.provider || env.llm.defaultProvider,
+    model: config?.model || env.llm.getDefaultModel(),
+    temperature: config?.temperature ?? 1.0,
+    verbose: config?.verbose ?? false,
     connectedChain: config?.connectedChain,
     connectedChainDisplayName: config?.connectedChainDisplayName,
   };

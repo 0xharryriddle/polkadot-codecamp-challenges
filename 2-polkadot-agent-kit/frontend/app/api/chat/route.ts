@@ -93,6 +93,7 @@ Try: "Join pool #1 with 10 DOT", "Get info about pool #1", or "Swap 5 DOT to USD
     // Use AgentWrapper for all other queries — lazy import to avoid build-time eval
     const { getAgentWrapper } = await import("@/lib/agent");
     const agent = await getAgentWrapper();
+    console.log("Provider: ", agent.provider);
 
     // Send query through the iterative tool-calling agent loop
     const response = await agent.ask(userMessage);
@@ -137,6 +138,7 @@ export async function GET() {
     // Lazy import to avoid build-time eval
     const { getAgentWrapper } = await import("@/lib/agent");
     const agent = await getAgentWrapper();
+    console.log("Provider: ", agent.provider);
 
     return NextResponse.json({
       name: "Polkadot Agent Chat API",

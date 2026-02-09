@@ -4,11 +4,13 @@
  * Types for the AgentWrapper following the example project pattern.
  */
 
-export type AgentProvider = "ollama";
+export type AgentProvider = "ollama" | "openai";
 
 export interface AgentConfig {
   provider: AgentProvider;
   model: string;
+  temperature?: number;
+  verbose?: boolean;
   connectedChain?: string;
   connectedChainDisplayName?: string;
 }

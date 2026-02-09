@@ -14,6 +14,7 @@
     "@galacticcouncil/api-augment": "^0.9.0",
     "@langchain/core": "^1.1.19",
     "@langchain/ollama": "^1.2.2",
+    "@langchain/openai": "^1.2.5",
     "@luno-kit/react": "^0.0.10",
     "@luno-kit/ui": "^0.0.10",
     "@polkadot-agent-kit/common": "^2.1.5",

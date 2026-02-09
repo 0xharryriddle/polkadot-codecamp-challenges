@@ -1,7 +1,8 @@
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { OllamaModel } from "./ollama/index";
+import { OpenAIModel } from "./openai";
 
-export type ChatProvider = "ollama";
+export type ChatProvider = "ollama" | "openai";
 
 export type ChatModelWithTools = BaseChatModel & {
   bindTools: (tools: any[]) => void;
@@ -19,6 +20,7 @@ const chatModelConstructors: Record<
   (options: ChatModelOptions) => ChatModelWithTools
 > = {
   ollama: (options: ChatModelOptions) => OllamaModel.create(options),
+  openai: (options: ChatModelOptions) => OpenAIModel.create(options),
 };
 
 export class ChatModelFactory {
@@ -31,3 +33,9 @@ export class ChatModelFactory {
     return constructor(options);
   }
 }
+
+// Export all types and classes for easy importing
+export { OllamaModel } from "./ollama/index";
+export { OpenAIModel } from "./openai";
+export * from "./ollama/index";
+export * from "./openai";

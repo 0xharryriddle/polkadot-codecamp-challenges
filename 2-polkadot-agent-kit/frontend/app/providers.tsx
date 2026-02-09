@@ -17,6 +17,7 @@ import {
   walletConnectConnector,
 } from "@luno-kit/react/connectors";
 import { LunoKitProvider } from "@luno-kit/ui";
+import { env } from "@/lib/config/env";
 
 // Hydration chain configuration
 const hydration = {
@@ -30,7 +31,7 @@ const hydration = {
   },
 } as const;
 
-const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_ID || "";
+const walletConnectProjectId = env.wallet.walletConnectId;
 
 const connectors = [
   polkadotjsConnector(),
