@@ -16,7 +16,7 @@ export const walletConfig = {
  * Polkadot Account Configuration
  */
 export const polkadotConfig = {
-  mnemonic: process.env.POLKADOT_MNEMONIC,
+  mnemonic: process.env.NEXT_PUBLIC_POLKADOT_MNEMONIC,
   privateKey: process.env.POLKADOT_PRIVATE_KEY,
   publicKey: process.env.POLKADOT_PUBLIC_KEY,
   address: process.env.POLKADOT_ADDRESS,
@@ -67,7 +67,7 @@ export const llmConfig = {
       "gpt-4-turbo",
       "gpt-4",
       "gpt-3.5-turbo",
-      "gpt-5-nano",
+      "gpt-5-mini",
     ] as const,
 
     /**

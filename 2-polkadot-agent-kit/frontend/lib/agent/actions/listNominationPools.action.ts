@@ -1,8 +1,11 @@
 /**
  * Custom Action: List Nomination Pools
  *
- * Queries nomination pool information from a relay chain.
+ * Queries nomination pool information from a chain.
  * Uses createAction from @polkadot-agent-kit/llm following the addCustomTools pattern.
+ *
+ * IMPORTANT: Nomination pools exist on ASSET HUB chains (e.g., paseo_asset_hub),
+ * not relay chains. The SDK uses ChainIdAssetHub types for pool operations.
  */
 
 import { z } from "zod";
@@ -18,7 +21,7 @@ const poolInfoSchema = z.object({
   chain: z
     .string()
     .describe(
-      "The relay chain to query pools from (e.g., 'paseo', 'west', 'polkadot', 'kusama'). Nomination pools exist on relay chains, not asset hub chains.",
+      "The chain to query pools from. Nomination pools exist on ASSET HUB chains (e.g., 'paseo_asset_hub', 'polkadot_asset_hub', 'westend_asset_hub', 'kusama_asset_hub').",
     ),
 });
 
@@ -26,7 +29,7 @@ export function createGetPoolInfoAction(agentKit: PolkadotAgentKit) {
   const poolInfoConfig: ToolConfig = {
     name: "list_nomination_pools",
     description:
-      "Get information about all nomination pools on a specific relay chain. Returns pool IDs, states, member counts, and other details. Nomination pools exist on RELAY chains like 'paseo', 'west', 'polkadot', 'kusama', NOT on asset hub chains.",
+      "Get information about all nomination pools on a specific chain. Returns pool IDs, states, member counts, and other details. Nomination pools exist on ASSET HUB chains like 'paseo_asset_hub', 'polkadot_asset_hub', 'westend_asset_hub', 'kusama_asset_hub'.",
     schema: poolInfoSchema as any,
   };
 
@@ -57,7 +60,7 @@ export function createGetPoolInfoAction(agentKit: PolkadotAgentKit) {
 
         if (!api.query?.NominationPools) {
           return createErrorResponse(
-            `NominationPools pallet not available on ${chain}. Nomination pools only exist on relay chains.`,
+            `NominationPools pallet not available on ${chain}. Make sure you're using an asset hub chain (e.g., paseo_asset_hub).`,
             poolInfoConfig.name,
           );
         }

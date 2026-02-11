@@ -52,8 +52,31 @@ export class AgentWrapper {
     console.log(`Initializing ${this.provider} with model: ${this.model}`);
     console.log(`Connected chain: ${this.connectedChain || "not specified"}`);
 
-    // Create staking system prompt with connected chain info
+    // Pre-initialize chain API connections (like the playground does)
+    // This ensures chains are ready before any tool execution
+    try {
+      console.log("Pre-initializing chain APIs...");
+      await this.agentKit.initializeApi();
+      console.log("Chain APIs initialized successfully");
+    } catch (error) {
+      console.warn(
+        "⚠️  Chain API pre-initialization failed (tools may need ensure_chain_api first):",
+        error instanceof Error ? error.message : error,
+      );
+    }
+
+    // Get the agent's address to include in the system prompt
+    let agentAddress: string | undefined;
+    try {
+      agentAddress = this.agentKit.getCurrentAddress();
+      console.log("Agent address:", agentAddress);
+    } catch (e) {
+      console.warn("Could not get agent address:", e);
+    }
+
+    // Create staking system prompt with agent address and connected chain info
     const basePrompt = createStakingSystemPrompt(
+      agentAddress,
       this.connectedChain,
       this.connectedChainDisplayName,
     );
@@ -113,8 +136,10 @@ export class AgentWrapper {
     const maxIterations = 15;
 
     // Track consecutive failures to prevent infinite loops
+    // Allow 2 consecutive failures of the SAME tool before stopping,
+    // so the agent can: fail → call ensure_chain_api → retry once.
     let consecutiveFailures = 0;
-    const maxConsecutiveFailures = 3;
+    const maxConsecutiveFailures = 2;
     let lastFailedTool: string | null = null;
 
     // Agent loop: invoke LLM, check for tool calls, execute tools, repeat

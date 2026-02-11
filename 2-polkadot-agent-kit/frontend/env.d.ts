@@ -26,9 +26,9 @@ declare namespace NodeJS {
     /**
      * Polkadot account mnemonic phrase (12 or 24 words)
      * Used for account recovery and key derivation
-     * Choose ONE: POLKADOT_MNEMONIC or POLKADOT_PRIVATE_KEY
+     * Choose ONE: NEXT_PUBLIC_POLKADOT_MNEMONIC or POLKADOT_PRIVATE_KEY
      */
-    POLKADOT_MNEMONIC?: string;
+    NEXT_PUBLIC_POLKADOT_MNEMONIC?: string;
 
     /**
      * Polkadot account public key (hex format with 0x prefix)
@@ -44,7 +44,7 @@ declare namespace NodeJS {
 
     /**
      * Polkadot account private key (hex format with 0x prefix)
-     * Choose ONE: POLKADOT_MNEMONIC or POLKADOT_PRIVATE_KEY
+     * Choose ONE: NEXT_POLKADOT_MNEMONIC or POLKADOT_PRIVATE_KEY
      * ⚠️ NEVER commit this value to version control
      */
     POLKADOT_PRIVATE_KEY?: string;

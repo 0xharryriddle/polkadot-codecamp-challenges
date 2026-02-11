@@ -45,19 +45,53 @@ export function getPolkadotAgent(
   config?: Partial<SdkAgentConfig>,
 ): PolkadotAgentKit {
   if (!agentInstance) {
-    const privateKey =
-      config?.privateKey ||
-      env.polkadot.privateKey ||
-      env.polkadot.mnemonic ||
-      DEFAULT_TEST_PRIVATE_KEY;
+    const mnemonic = env.polkadot.mnemonic;
+    const privateKey = env.polkadot.privateKey;
+
+    console.log("=== Polkadot Agent Kit Init ===");
+    console.log(
+      "Mnemonic from env:",
+      mnemonic ? `"${mnemonic.slice(0, 20)}..."` : "NOT SET",
+    );
+    console.log("Private key from env:", privateKey ? "SET" : "NOT SET");
+    console.log("POLKADOT_ADDRESS in env:", env.polkadot.address || "NOT SET");
+
+    // SDK requires exactly ONE of mnemonic or privateKey (not both).
+    // Prefer privateKey if available, then fall back to mnemonic.
+    const credentials: Pick<SdkAgentConfig, "mnemonic" | "privateKey"> =
+      privateKey
+        ? { privateKey }
+        : mnemonic
+          ? { mnemonic }
+          : (() => {
+              throw new Error(
+                "No Polkadot credentials configured. Set POLKADOT_PRIVATE_KEY or NEXT_PUBLIC_POLKADOT_MNEMONIC in .env",
+              );
+            })();
+
+    console.log(
+      "Using credential type:",
+      privateKey ? "privateKey" : "mnemonic",
+    );
 
     const finalConfig: SdkAgentConfig = {
-      privateKey,
+      ...credentials,
       keyType: config?.keyType || "Sr25519",
+      // Pre-configure the chains we need so initializeApi() connects to them
+      chains: config?.chains || ["paseo" as any, "paseo_asset_hub" as any],
       ...config,
     };
 
     agentInstance = new PolkadotAgentKit(finalConfig);
+
+    // Log the actual derived address from the SDK
+    try {
+      const derivedAddress = agentInstance.getCurrentAddress();
+      console.log("SDK derived agent address:", derivedAddress);
+    } catch (e) {
+      console.warn("Could not get derived address:", e);
+    }
+    console.log("=== End Agent Kit Init ===");
   }
 
   return agentInstance;

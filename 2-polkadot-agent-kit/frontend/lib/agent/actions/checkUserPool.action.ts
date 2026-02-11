@@ -3,6 +3,9 @@
  *
  * Checks which nomination pool (if any) an account has joined on a given chain.
  * Uses createAction from @polkadot-agent-kit/llm following the addCustomTools pattern.
+ *
+ * IMPORTANT: The correct storage map is `NominationPools.PoolMembers` (keyed by AccountId),
+ * NOT `NominationPools.Members`. The SDK uses `PoolMembers.getValue(address)` to check membership.
  */
 
 import { z } from "zod";
@@ -17,15 +20,21 @@ import {
 const checkUserPoolSchema = z.object({
   chain: z
     .string()
-    .describe("Chain to query (e.g., 'paseo', 'west', 'polkadot')"),
-  account: z.string().describe("Account address to check (SS58)"),
+    .describe(
+      "Chain to query — use asset hub chains where nomination pools exist (e.g., 'paseo_asset_hub', 'polkadot_asset_hub', 'westend_asset_hub')",
+    ),
+  account: z
+    .string()
+    .describe(
+      "Account address to check (SS58). Use the agent's own address when checking 'my pool'.",
+    ),
 });
 
 export function createCheckUserPoolAction(agentKit: PolkadotAgentKit) {
   const config: ToolConfig = {
     name: "check_user_pool",
     description:
-      "Check which nomination pool (if any) an account has joined on a given chain.",
+      "Check which nomination pool (if any) an account has joined on a given chain. Use ASSET HUB chains (e.g., paseo_asset_hub) where nomination pools exist. When checking the agent's own pool, use the agent's address.",
     schema: checkUserPoolSchema as any,
   };
 
@@ -56,132 +65,104 @@ export function createCheckUserPoolAction(agentKit: PolkadotAgentKit) {
 
         if (!api.query?.NominationPools) {
           return createErrorResponse(
-            `NominationPools pallet not available on ${chain}.`,
+            `NominationPools pallet not available on ${chain}. Make sure you're using an asset hub chain (e.g., paseo_asset_hub).`,
             config.name,
           );
         }
 
         const normalized = account.trim();
 
-        // Strategy 1: If there's a Members storage map, iterate entries
+        // Strategy 1 (preferred): Use PoolMembers.getValue(address) — single-key query
+        // This is how the SDK checks membership: api.query.NominationPools.PoolMembers.getValue(address)
         try {
-          if (api.query.NominationPools.Members?.getEntries) {
-            const membersEntries =
-              await api.query.NominationPools.Members.getEntries();
-            for (const entry of membersEntries) {
+          if (api.query.NominationPools.PoolMembers?.getValue) {
+            const memberData =
+              await api.query.NominationPools.PoolMembers.getValue(normalized);
+            console.log(
+              "PoolMembers.getValue result:",
+              JSON.stringify(memberData),
+            );
+
+            if (memberData && memberData.pool_id !== undefined) {
+              const poolId = Number(memberData.pool_id);
+              return createSuccessResponse(
+                {
+                  chain,
+                  account: normalized,
+                  joined: true,
+                  poolId,
+                  points: memberData.points?.toString() || "0",
+                  unbondingEras: memberData.unbonding_eras || {},
+                },
+                config.name,
+              );
+            }
+          }
+        } catch (e) {
+          console.log(
+            "PoolMembers.getValue failed, trying alternatives:",
+            e instanceof Error ? e.message : e,
+          );
+        }
+
+        // Strategy 2: Try PoolMembers.getEntries() and search for the account
+        try {
+          if (api.query.NominationPools.PoolMembers?.getEntries) {
+            const entries =
+              await api.query.NominationPools.PoolMembers.getEntries();
+            console.log(`PoolMembers has ${entries.length} entries`);
+
+            for (const entry of entries) {
               const keyArgs =
                 (entry as any).keyArgs || (entry as any).args || [];
+              const entryAccount = String(keyArgs[0] || "");
 
-              if (keyArgs.some((k: any) => String(k) === normalized)) {
-                const poolId =
-                  keyArgs[0] === normalized ? keyArgs[1] : keyArgs[0];
+              if (entryAccount === normalized) {
+                const value = (entry as any).value;
+                const poolId = value?.pool_id
+                  ? Number(value.pool_id)
+                  : undefined;
                 return createSuccessResponse(
                   {
                     chain,
                     account: normalized,
                     joined: true,
-                    poolId:
-                      typeof poolId === "number" ? poolId : Number(poolId),
+                    poolId,
+                    points: value?.points?.toString() || "0",
                   },
                   config.name,
                 );
               }
-
-              try {
-                const val = (entry as any).value;
-                const str = val?.toHuman
-                  ? JSON.stringify(val.toHuman())
-                  : String(val);
-                if (str && str.includes(normalized)) {
-                  const poolId = keyArgs[0];
-                  return createSuccessResponse(
-                    {
-                      chain,
-                      account: normalized,
-                      joined: true,
-                      poolId:
-                        typeof poolId === "number" ? poolId : Number(poolId),
-                    },
-                    config.name,
-                  );
-                }
-              } catch {
-                // continue
-              }
             }
           }
-        } catch {
-          // continue to next strategy
+        } catch (e) {
+          console.log(
+            "PoolMembers.getEntries failed:",
+            e instanceof Error ? e.message : e,
+          );
         }
 
-        // Strategy 2: Probe each pool by id
+        // Strategy 3 (fallback): Try legacy Members storage
         try {
-          if (api.query.NominationPools.BondedPools?.getEntries) {
-            const all =
-              await api.query.NominationPools.BondedPools.getEntries();
-            for (const entry of all) {
-              const poolId = (entry as any).keyArgs
-                ? (entry as any).keyArgs[0]
-                : undefined;
-              if (poolId === undefined) continue;
-
-              try {
-                if (api.query.NominationPools.Members) {
-                  const res = await api.query.NominationPools.Members(
-                    poolId,
-                    normalized,
-                  );
-                  if (
-                    res &&
-                    (res.isSome ||
-                      (String(res) !== "0" && String(res) !== "None"))
-                  ) {
-                    return createSuccessResponse(
-                      {
-                        chain,
-                        account: normalized,
-                        joined: true,
-                        poolId:
-                          typeof poolId === "number" ? poolId : Number(poolId),
-                      },
-                      config.name,
-                    );
-                  }
-                }
-              } catch {
-                // continue
-              }
-
-              try {
-                if (api.query.NominationPools.Members) {
-                  const res2 = await api.query.NominationPools.Members(
-                    normalized,
-                    poolId,
-                  );
-                  if (
-                    res2 &&
-                    (res2.isSome ||
-                      (String(res2) !== "0" && String(res2) !== "None"))
-                  ) {
-                    return createSuccessResponse(
-                      {
-                        chain,
-                        account: normalized,
-                        joined: true,
-                        poolId:
-                          typeof poolId === "number" ? poolId : Number(poolId),
-                      },
-                      config.name,
-                    );
-                  }
-                }
-              } catch {
-                // continue
-              }
+          if (api.query.NominationPools.Members?.getValue) {
+            const memberData =
+              await api.query.NominationPools.Members.getValue(normalized);
+            if (memberData && memberData.pool_id !== undefined) {
+              const poolId = Number(memberData.pool_id);
+              return createSuccessResponse(
+                {
+                  chain,
+                  account: normalized,
+                  joined: true,
+                  poolId,
+                  points: memberData.points?.toString() || "0",
+                },
+                config.name,
+              );
             }
           }
         } catch {
-          // ignore and fall through
+          // continue
         }
 
         return createSuccessResponse(
@@ -190,7 +171,7 @@ export function createCheckUserPoolAction(agentKit: PolkadotAgentKit) {
             account: normalized,
             joined: false,
             message:
-              "Account is not a member of any nomination pool, or membership storage layout couldn't be detected.",
+              "Account is not a member of any nomination pool on this chain.",
           },
           config.name,
         );
